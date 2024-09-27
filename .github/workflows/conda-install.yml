@@ -11,20 +11,24 @@ on:
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest] 
+        os: [ubuntu-latest, windows-latest]
 
     steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.7"
+          architecture: x64
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: test-env  # The environment to create
           auto-update-conda: false
-          python-version: 3.7
 
       - name: Install Environment and Dependencies
         run: |
@@ -33,5 +37,4 @@ jobs:
           pip install "opencv-contrib-python<4.7.0" 
           pip install sleap_anipose
           pip install "anipose<1.1"
-          conda install mayavi ffmpeg
           pip install --upgrade apptools
