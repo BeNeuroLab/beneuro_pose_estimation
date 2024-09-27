@@ -1,0 +1,37 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: beneuro_pose_estimation
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest] 
+
+    steps:
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: test-env  # The environment to create
+          auto-update-conda: false
+          python-version: 3.8
+
+      - name: Install Environment and Dependencies
+        run: |
+          conda install -c conda-forge -c nvidia -c sleap -c anaconda sleap
+          pip uninstall -y opencv-python-headless 
+          pip install "opencv-contrib-python<4.7.0" 
+          pip install sleap_anipose
+          pip install "anipose<1.1"
+          conda install mayavi ffmpeg
+          pip install --upgrade apptools
