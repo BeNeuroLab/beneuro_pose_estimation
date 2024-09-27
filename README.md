@@ -37,6 +37,6 @@ environment and separate from `bnd`.
       # Install sleap anipose and anipose version 1.0 because we cannot use 1.1
       $ pip install sleap_anipose
       $ pip install "anipose<1.1"
-      $ conda install mayavi ffmpeg
+      $ conda install -y mayavi ffmpeg
       $ pip install --upgrade apptools
       ```
