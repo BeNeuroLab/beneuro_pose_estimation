@@ -25,13 +25,18 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.7
+          auto-update-conda: false
 
-      - name: Create and activate Conda environment
+      - name: Initialize Conda and create environment
+        shell: bash -l {0}
         run: |
+          conda init bash
+          source ~/.bashrc
           conda create -n my_env python=3.7 -y
-          source activate my_env
 
-      - name: Install dependencies in Conda environment
+      - name: Activate Conda environment and install dependencies
+        shell: bash -l {0}
         run: |
+          conda activate my_env
           conda install numpy matplotlib scipy -y
           pip install pandas
