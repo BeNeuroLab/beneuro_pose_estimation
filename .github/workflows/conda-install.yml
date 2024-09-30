@@ -31,7 +31,6 @@ jobs:
         shell: bash -l {0}
         run: |
           if [runner.os == 'Linux']; then
-              apt install important_linux_software
               conda init bash
               source ~/.bashrc
           conda create -y -n bnp python=3.7
