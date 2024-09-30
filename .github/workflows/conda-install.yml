@@ -27,10 +27,10 @@ jobs:
           python-version: 3.7
           auto-update-conda: false
 
-      - name: Initialize Conda and create environment (Ubuntu only)
+      - name: Initialize Conda (ubuntu only) and create environment
         shell: bash -l {0}
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
+          if [runner.os == 'Linux']; then
               apt install important_linux_software
               conda init bash
               source ~/.bashrc
