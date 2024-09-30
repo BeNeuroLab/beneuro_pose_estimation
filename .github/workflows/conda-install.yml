@@ -30,8 +30,10 @@ jobs:
       - name: Initialize Conda and create environment (Ubuntu only)
         shell: bash -l {0}
         run: |
-          conda init bash
-          source ~/.bashrc
+          if [ "$RUNNER_OS" == "Linux" ]; then
+              apt install important_linux_software
+              conda init bash
+              source ~/.bashrc
           conda create -y -n bnp python=3.7
 
       - name: Activate Conda environment and install dependencies
