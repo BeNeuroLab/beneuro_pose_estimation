@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest]
 
@@ -28,14 +28,14 @@ jobs:
           auto-update-conda: false
 
       - name: Initialize Conda and create environment (Ubuntu only)
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           conda init bash
           source ~/.bashrc
           conda create -y -n bnp python=3.7
 
       - name: Create environment (Windows only)
-        if: runner.os == 'Windows'
+        if: matrix.os == 'windows-latest'
         run: |
           conda create -y -n bnp python=3.7
 
