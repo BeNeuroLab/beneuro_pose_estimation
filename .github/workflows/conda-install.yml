@@ -29,6 +29,7 @@ jobs:
 
       - name: Initialize Conda and create environment (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
+        shell: bash -l {0}
         run: |
           conda init bash
           source ~/.bashrc
