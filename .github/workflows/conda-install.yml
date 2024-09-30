@@ -28,19 +28,14 @@ jobs:
           auto-update-conda: false
 
       - name: Initialize Conda and create environment (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
         shell: bash -l {0}
         run: |
           conda init bash
           source ~/.bashrc
           conda create -y -n bnp python=3.7
 
-      - name: Create environment (Windows only)
-        if: matrix.os == 'windows-latest'
-        run: |
-          conda create -y -n bnp python=3.7
-
       - name: Activate Conda environment and install dependencies
+        shell: bash -l {0}
         run: |
           conda activate bnp
           conda install -c conda-forge -c nvidia -c sleap -c anaconda sleap
