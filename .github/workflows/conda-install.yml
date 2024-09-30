@@ -18,23 +18,15 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.7"
-          architecture: x64
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: test-env  # The environment to create
-          auto-update-conda: false
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Install Environment and Dependencies
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+
+      - name: Install dependencies
         run: |
-          conda install -c conda-forge -c nvidia -c sleap -c anaconda sleap
-          pip uninstall -y opencv-python-headless 
-          pip install "opencv-contrib-python<4.7.0" 
-          pip install sleap_anipose
-          pip install "anipose<1.1"
-          pip install --upgrade apptools
+          python -m pip install --upgrade pip
+          pip install numpy pandas matplotlib scipy
