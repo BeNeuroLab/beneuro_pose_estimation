@@ -27,16 +27,15 @@ jobs:
           python-version: 3.7
           auto-update-conda: false
 
-#      - name: Initialize Conda and create environment
-#        shell: bash -l {0}
-#        run: |
-#          conda init bash
-#          source ~/.bashrc
-#          conda create -y -n bnp python=3.7
-
-      - name: Activate Conda environment and install dependencies
-#        shell: bash -l {0}
+      - name: Initialize Conda (Ubuntu only)
+        if: runner.os == 'Linux'
         run: |
+          conda init bash
+          source ~/.bashrc
+
+      - name: Create and activate Conda environment and install dependencies
+        run: |
+          conda create -y -n bnp python=3.7
           conda activate bnp
           conda install -c conda-forge -c nvidia -c sleap -c anaconda sleap
           pip uninstall -y opencv-python-headless
