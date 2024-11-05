@@ -1,5 +1,5 @@
 """
-Module to carry out anipose operations
+Module to carry out anipose operations - not tested yet
 """
 import logging
 from pathlib import Path
@@ -147,7 +147,8 @@ def run_pose_estimation(sessions, log_file=None, projects_dir=params.complete_pr
     set_logging(log_file)
     for session in sessions:
         logging.info(f"Running pose estimation on {session}")
-        
+        project_dir = f"{projects_dir}/{session}"
+        os.makedirs(session_dir, exist_ok=True)
         sleapTools.get_2Dpredictions(session)
         convert_predictions_to_h5(session)
 
@@ -156,7 +157,7 @@ def run_pose_estimation(sessions, log_file=None, projects_dir=params.complete_pr
         calib_videos_dir = f"{params.calibration_vid_dir}_{session_date}"
         if not os.path.exists(calib_file_path):
             get_calib_file(calib_videos_dir,calib_file_path)
-        project_dir = f"{projects_dir}/{session}"
+        
         compute_3Dpredictions(session, calib_file_path=calib_file_path, project_dir = project_dir)
         save_to_csv(f"{project_dir}/{session}_pose_estimation_combined.h5", f"{project_dir}/{session}_3d_predictions.csv")
         logging.info(f"Pose estimation completed for {session}")
