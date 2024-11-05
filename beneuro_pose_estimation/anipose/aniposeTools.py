@@ -1,9 +1,14 @@
 """
-Module to carry out anipose operations - not tested yet
+Module to carry out Anipose operations 
+TBD
+- not tested yet
+- add angle calculation 
 """
 import logging
-from pathlib import Path
 from beneuro_pose_estimation import set_logging
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from pathlib import Path
 import sleap
 import numpy as np
 import os
@@ -18,6 +23,7 @@ import sleapTools
 import subprocess
 
 
+
 def get_frame_count(h5_analysis_file):
     with h5py.File(h5_analysis_file, 'r') as f:
         # Access the 'track_occupancy' dataset to get frame count
@@ -27,7 +33,7 @@ def get_frame_count(h5_analysis_file):
 
 def get_calib_file(calibration_videos_dir, calib_save_path, board=params.board):
     """
-    Generates calibration file using ChArUco board videos.
+    Generates calibration file using ChArUco board videos. - get most recent calibration 
 
     Parameters
     ----------
@@ -140,7 +146,7 @@ def extract_date(session_name):
     return "".join(session_name.split("_")[1:4])
 
 
-def run_pose_estimation(sessions, log_file=None, projects_dir=params.complete_projects_dir):
+def run_pose_estimation(sessions, log_file = None), projects_dir=params.complete_projects_dir):
     """
     Main routing from videos to 3D keypoints and angles.
     """
@@ -163,8 +169,8 @@ def run_pose_estimation(sessions, log_file=None, projects_dir=params.complete_pr
         logging.info(f"Pose estimation completed for {session}")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Run pose estimation for specified sessions.")
-    parser.add_argument('sessions', nargs='+', help="List of session names to process")
-    args = parser.parse_args()
-    run_pose_estimation(sessions=args.sessions)
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser(description="Run pose estimation for specified sessions.")
+#     parser.add_argument('sessions', nargs='+', help="List of session names to process")
+#     args = parser.parse_args()
+#     run_pose_estimation(sessions=args.sessions)

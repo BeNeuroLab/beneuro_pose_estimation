@@ -1,14 +1,27 @@
 """
-Module for Sleap processing
+Module for SLEAP processing
+TBD
+- test training
+- add evaluation
+
+-> define paths in repo_path/beneuro_pose_estimation/params.py
+-> from repo path run command line:
+
+python -m scripts.annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
+python -m scripts.predictions --sessions session_name --cameras camera_name (to get 2D predictions)
+python -m scripts.visualize_predictions --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
+python -m scripts.create_annotation_projects --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
+
+cameras argument optional - default = params.default_cameras
 """
 import sys
 import os
 import subprocess
 from pathlib import Path
-project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(project_path)
-import params
-
+from beneuro_pose_estimation import params, set_logging
+import logging
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 import attr
 import numpy as np
 import random
@@ -25,10 +38,11 @@ from sleap.info.feature_suggestions import (
     ParallelFeaturePipeline,
 )
 import sleap
-import argparse
+# import argparse
 
 
 
+# annotating on predictions 
 
 def select_frames_to_annotate(session,camera,pipeline = params.frame_selection_pipeline,new_video_path = None):
     """
@@ -56,7 +70,7 @@ def select_frames_to_annotate(session,camera,pipeline = params.frame_selection_p
         frame = video.get_frame(frame_idx)
         plt.imsave(os.path.join(frames_dir, f'{session}_{camera}_frame_{frame_idx}.png'), frame)
     
-    print(f"Selected frames saved for {session}, {camera}")
+    logging.info(f"Selected frames saved for {session}, {camera}")
     
     # create new video from the selected frames
     if new_video_path is None:
@@ -103,7 +117,7 @@ def create_video_from_frames(frames_dir, video_path, output_width=1280, output_h
             # Write the resized frame to the video
             video.write(resized_frame)
         else:
-            print(f"Skipping image {image} due to reading error.")
+            logging.info(f"Skipping image {image} due to reading error.")
 
     for image in images:
         image_path = os.path.join(frames_dir, image)
@@ -136,7 +150,7 @@ def create_annotation_project(session, camera):
     skeleton = Skeleton.from_dict(skeleton_data)
     
     # Initialize a list of labeled frames
-    labeled_frames = [] = []
+    labeled_frames = []
     for vid in videos:
         video = Video.from_filename(annotations_dir_path + vid)
         instances = [Instance(skeleton=skeleton)]
@@ -145,7 +159,7 @@ def create_annotation_project(session, camera):
     labels = Labels(labeled_frames)
     os.makedirs(os.path.dirname(labels_output_path), exist_ok=True)
     labels.save(labels_output_path)
-    print(f"Sleap project created for session {session},camera {camera}.")
+    logging.info(f"Sleap project created for session {session},camera {camera}.")
     
 
     return 
@@ -155,7 +169,7 @@ def create_annotation_project_inefficient(session, camera):
     '''
     create annotation video using the full video (without  creating a new video from the selected frames)
     '''
-    print(f"Creating SLEAP project for session {session} and camera {camera}...")
+    logging.info(f"Creating SLEAP project for session {session} and camera {camera}...")
             
     animal = session.split("_")[0]
     # Paths
@@ -178,13 +192,13 @@ def create_annotation_project_inefficient(session, camera):
         instances = [Instance(skeleton=skeleton)]  # Empty instance
         labeled_frame = LabeledFrame(video=video, frame_idx=frame_idx, instances=instances)
         labeled_frames.append(labeled_frame)
-        print(f"Labeled frame created for {session}, {camera}, frame {frame_idx}")
+        logging.info(f"Labeled frame created for {session}, {camera}, frame {frame_idx}")
 
     # Save the labeled frames to a .slp project file
     labels = Labels(labeled_frames)
     os.makedirs(os.path.dirname(labels_output_path), exist_ok=True)
     labels.save(labels_output_path)
-    print(f"Sleap project created for session {session},camera {camera}.")
+    logging.info(f"Sleap project created for session {session},camera {camera}.")
     
     return 
 
@@ -203,9 +217,11 @@ def annotate_video(sessions = params.sessions_to_annotate, cameras = params.defa
     """
     creates slp project from raw video and launches annotation GUI
     should it be for one session one camera at a time?
+
     ------
     """
-    
+    sessions = sessions or params.sessions_to_annotate
+    cameras = cameras or params.default_cameras
     if isinstance(sessions, str):
         sessions = [sessions]
     if isinstance(cameras, str):
@@ -221,7 +237,7 @@ def annotate_video(sessions = params.sessions_to_annotate, cameras = params.defa
             if not os.path.exists(project_path):
                 create_annotation_project(session,camera)
     
-            print(f"Launching annotation GUI...")
+            logging.info(f"Launching annotation GUI...")
             subprocess.run(["sleap-label", project_path]) # first test if the project is created
 
 
@@ -239,14 +255,14 @@ def create_training_project(camera, sessions):
         
         # Check if the .slp file exists for the session
         if not os.path.exists(session_slp_path):
-            print(f"SLP project file {session_slp_path} does not exist. Skipping session {session}.")
+            logging.info(f"SLP project file {session_slp_path} does not exist. Skipping session {session}.")
             continue
 
         # Load the .slp project and extract labeled frames
         session_labels = sleap.load_file(session_slp_path)
         session_labeled_frames = session_labels.labeled_frames
         all_labeled_frames.extend(session_labeled_frames)
-        print(f"Added {len(session_labeled_frames)} frames from session {session} for camera {camera}.")
+        logging.info(f"Added {len(session_labeled_frames)} frames from session {session} for camera {camera}.")
 
     # Create a new Labels object with the combined labeled frames
     combined_labels = Labels(labeled_frames=all_labeled_frames)
@@ -256,13 +272,17 @@ def create_training_project(camera, sessions):
 
     # Save the combined Labels object to a new .slp file
     combined_labels.save(combined_project_path)
-    print(f"Combined training project saved at {combined_project_path}")
+    logging.info(f"Combined training project saved at {combined_project_path}")
 
     return
 
 
-def train_models(sessions = params.training_sessions, cameras = params.default_cameras):
-
+def train_models(sessions = params.training_sessions, cameras = params.default_cameras): 
+    '''
+    TBD 
+    - create config file with training parameters
+    - check creation of training project
+    '''
     if isinstance(sessions, str):
         sessions = [sessions]
 
@@ -279,25 +299,25 @@ def train_models(sessions = params.training_sessions, cameras = params.default_c
 
         # Check if the .slp file exists; if not, run create_training_file
         if not os.path.exists(labels_file):
-            print(f"{labels_file} does not exist. Creating training file...")
+            logging.info(f"{labels_file} does not exist. Creating training file...")
             create_training_project(camera, sessions)
 
         # Ensure model directory exists
         if not os.path.exists(model_dir):
-            print(f"Model directory for {camera} does not exist, skipping.")
+            logging.info(f"Model directory for {camera} does not exist, skipping.")
             continue
         
         # Run sleap-train command
-        print(f"Training model for {camera}...")
+        logging.info(f"Training model for {camera}...")
         command = ["sleap-train", config_file, labels_file]
         result = subprocess.run(command, cwd=model_dir)
         
         if result.returncode == 0:
-            print(f"Finished training for {camera}.")
+            logging.info(f"Finished training for {camera}.")
         else:
-            print(f"Training failed for {camera}.")
+            logging.info(f"Training failed for {camera}.")
 
-    print("All training has been executed.")
+    logging.info("All training has been executed.")
 
 
 
@@ -309,8 +329,8 @@ def evaluate_model(camera):
     # Load evaluation metrics
     metrics_path = f"{params.slp_models_dir}/{camera}/metrics.npz"
     metrics = np.load(metrics_path)
-    print("Localization Error (50th percentile):", metrics["dist.p50"])
-    print("Mean Average Precision (OKS):", metrics["oks_voc.mAP"])
+    logging.info("Localization Error (50th percentile):", metrics["dist.p50"])
+    logging.info("Mean Average Precision (OKS):", metrics["oks_voc.mAP"])
 
     labels_path = os.path.join(params.slp_annotations_dir, f"{camera}.slp")
     # Load ground truth and predicted labels for comparison
@@ -322,9 +342,9 @@ def evaluate_model(camera):
     pck = calculate_pck(labels_gt, labels_pr, threshold=5)
     oks = calculate_oks(labels_gt, labels_pr, sigmas=[0.1] * len(labels_gt[0].instances[0].points), image_size=(640, 480))
 
-    print(f"Localization error: {mean_error}, {median_error}")
-    print(f"PCK (5-pixel threshold): {pck}")
-    print(f"Average OKS: {oks}")
+    logging.info(f"Localization error: {mean_error}, {median_error}")
+    logging.info(f"PCK (5-pixel threshold): {pck}")
+    logging.info(f"Average OKS: {oks}")
 
 
     return
@@ -339,8 +359,10 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
     -------
 
     """
-    print("Running get_2Dpredictions...")
+    logging.info("Running get_2Dpredictions...")
     ## check if the output folder exists
+    sessions = sessions or params.sessions_to_predict
+    cameras = cameras or params.default_cameras
     if isinstance(sessions, str):
         sessions = [sessions]
     if isinstance(cameras, str):
@@ -370,7 +392,7 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
 
         # Run the sleap-track command using subprocess
         subprocess.run(command, check=True)
-        print(f"Tracking completed\n")
+        logging.info(f"Tracking completed\n")
     
     ## Otherwise go through the list of sessions and cameras
     else:
@@ -379,7 +401,7 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
             for camera in cameras:
                 model_dir = f"{params.slp_models_dir}/{camera}"
                 if not os.path.exists(model_dir):
-                    print(f"Model directory for {camera} does not exist, skipping.")
+                    logging.info(f"Model directory for {camera} does not exist, skipping.")
                     continue
                 model_path = f"{model_dir}/training_config.json"
 
@@ -393,9 +415,9 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
                 output_file = f"{params.predictions_dir}/{session}_{camera}.slp.predictions.slp"
 
 
-                print(f"Running sleap-track for session {session} and camera {camera}")
-                print(f"Input file: {input_file}")
-                print(f"Output file: {output_file}")
+                logging.info(f"Running sleap-track for session {session} and camera {camera}")
+                logging.info(f"Input file: {input_file}")
+                logging.info(f"Output file: {output_file}")
 
                 # construct sleap-track command 
 
@@ -417,7 +439,7 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
 
                 # Run the sleap-track command using subprocess
                 subprocess.run(command, check=True)
-                print(f"Tracking completed for session {session}, camera {camera}\n")
+                logging.info(f"Tracking completed for session {session}, camera {camera}\n")
 
     return
 
@@ -426,6 +448,8 @@ def visualize_predictions(sessions, cameras = params.default_cameras):
     """
     Launches SLEAP GUI for the predictions slp project for a list of 
     """
+    sessions = sessions or params.sessions_to_predict
+    cameras = cameras or params.default_cameras
     if isinstance(sessions, str):
         sessions = [sessions]
     if isinstance(cameras, str):
@@ -490,69 +514,69 @@ def visualize_prediction_plot(session, camera, frames_to_visualize = None):
     return
 
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="SLEAP Processing Commands")
-    subparsers = parser.add_subparsers(dest="command", required=True, help="Select a command to run")
+# def parse_arguments():
+#     parser = argparse.ArgumentParser(description="SLEAP Processing Commands")
+#     subparsers = parser.add_subparsers(dest="command", required=True, help="Select a command to run")
 
-    # Subparser for get_2Dpredictions
-    parser_predict = subparsers.add_parser("get_2Dpredictions", help="Run 2D predictions")
-    parser_predict.add_argument("--sessions", nargs="+", default=params.sessions_to_predict, help="List of sessions to process")
-    parser_predict.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to process")
-    parser_predict.add_argument("--frames", nargs="*", default=params.frames_to_predict, help="Specific frames to predict on")
-    parser_predict.add_argument("--input_file", type=str, help="Optional input file path for predictions")
-    parser_predict.add_argument("--output_file", type=str, help="Optional output file path for predictions")
-    parser_predict.add_argument("--model_path", type=str, help="Optional path to the SLEAP model for predictions")
+#     # Subparser for get_2Dpredictions
+#     parser_predict = subparsers.add_parser("get_2Dpredictions", help="Run 2D predictions")
+#     parser_predict.add_argument("--sessions", nargs="+", default=params.sessions_to_predict, help="List of sessions to process")
+#     parser_predict.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to process")
+#     parser_predict.add_argument("--frames", nargs="*", default=params.frames_to_predict, help="Specific frames to predict on")
+#     parser_predict.add_argument("--input_file", type=str, help="Optional input file path for predictions")
+#     parser_predict.add_argument("--output_file", type=str, help="Optional output file path for predictions")
+#     parser_predict.add_argument("--model_path", type=str, help="Optional path to the SLEAP model for predictions")
 
-    # Subparser for visualize_predictions
-    parser_visualize = subparsers.add_parser("visualize_predictions", help="Visualize 2D predictions")
-    parser_visualize.add_argument("--sessions", nargs="+", required=True, help="List of sessions to visualize predictions for")
-    parser_visualize.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to visualize predictions for")
+#     # Subparser for visualize_predictions
+#     parser_visualize = subparsers.add_parser("visualize_predictions", help="Visualize 2D predictions")
+#     parser_visualize.add_argument("--sessions", nargs="+", required=True, help="List of sessions to visualize predictions for")
+#     parser_visualize.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to visualize predictions for")
 
-    # Subparser for annotate_video
-    parser_annotate = subparsers.add_parser("annotate_video", help="Annotate video frames")
-    parser_annotate.add_argument("--sessions", nargs="+", default=params.sessions_to_annotate, help="List of sessions to annotate")
-    parser_annotate.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to annotate")
+#     # Subparser for annotate_video
+#     parser_annotate = subparsers.add_parser("annotate_video", help="Annotate video frames")
+#     parser_annotate.add_argument("--sessions", nargs="+", default=params.sessions_to_annotate, help="List of sessions to annotate")
+#     parser_annotate.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to annotate")
 
-    # Subparser for train_models
-    parser_train = subparsers.add_parser("train_models", help="Train models for sessions and cameras")
-    parser_train.add_argument("--sessions", nargs="+", default=params.training_sessions, help="List of sessions for training")
-    parser_train.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras for training")
+#     # Subparser for train_models
+#     parser_train = subparsers.add_parser("train_models", help="Train models for sessions and cameras")
+#     parser_train.add_argument("--sessions", nargs="+", default=params.training_sessions, help="List of sessions for training")
+#     parser_train.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras for training")
 
-    # Subparser for evaluate_model
-    parser_evaluate = subparsers.add_parser("evaluate_model", help="Evaluate trained model for a camera")
-    parser_evaluate.add_argument("--camera", nargs="*", default=params.default_cameras[0], help="Camera to evaluate")
+#     # Subparser for evaluate_model
+#     parser_evaluate = subparsers.add_parser("evaluate_model", help="Evaluate trained model for a camera")
+#     parser_evaluate.add_argument("--camera", nargs="*", default=params.default_cameras[0], help="Camera to evaluate")
 
-     # Subparser for create_annotation_projects
-    parser_create_annotations = subparsers.add_parser("create_annotation_projects", help="Create annotation projects for sessions and cameras")
-    parser_create_annotations.add_argument("--sessions", nargs="+", default=params.sessions_to_annotate, help="List of sessions for creating annotation projects")
-    parser_create_annotations.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras for creating annotation projects")
+#      # Subparser for create_annotation_projects
+#     parser_create_annotations = subparsers.add_parser("create_annotation_projects", help="Create annotation projects for sessions and cameras")
+#     parser_create_annotations.add_argument("--sessions", nargs="+", default=params.sessions_to_annotate, help="List of sessions for creating annotation projects")
+#     parser_create_annotations.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras for creating annotation projects")
 
-    return parser.parse_args()
+#     return parser.parse_args()
 
-def main():
-    args = parse_arguments()
-
-    # Execute the appropriate function based on the command
-    if args.command == "get_2Dpredictions":
-        get_2Dpredictions(
-            sessions=args.sessions,
-            cameras=args.cameras,
-            frames=args.frames,
-            input_file=args.input_file,
-            output_file=args.output_file,
-            model_path=args.model_path
-        )
-    elif args.command == "visualize_predictions":
-        visualize_predictions(sessions=args.sessions, cameras=args.cameras)
-    elif args.command == "annotate_video":
-        annotate_video(sessions=args.sessions, cameras=args.cameras)
-    elif args.command == "train_models":
-        train_models(sessions=args.sessions, cameras=args.cameras)
-    elif args.command == "create_annotation_projects":
-        create_annotation_projects(sessions=args.sessions, cameras=args.cameras)
-    elif args.command == "evaluate_model":
-        evaluate_model(camera=args.camera)
+# def main():
+#     args = parse_arguments()
+#     set_logging()
+#     # Execute the appropriate function based on the command
+#     if args.command == "get_2Dpredictions":
+#         get_2Dpredictions(
+#             sessions=args.sessions,
+#             cameras=args.cameras,
+#             frames=args.frames,
+#             input_file=args.input_file,
+#             output_file=args.output_file,
+#             model_path=args.model_path
+#         )
+#     elif args.command == "visualize_predictions":
+#         visualize_predictions(sessions=args.sessions, cameras=args.cameras)
+#     elif args.command == "annotate_video":
+#         annotate_video(sessions=args.sessions, cameras=args.cameras)
+#     elif args.command == "train_models":
+#         train_models(sessions=args.sessions, cameras=args.cameras)
+#     elif args.command == "create_annotation_projects":
+#         create_annotation_projects(sessions=args.sessions, cameras=args.cameras)
+#     elif args.command == "evaluate_model":
+#         evaluate_model(camera=args.camera)
     
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
