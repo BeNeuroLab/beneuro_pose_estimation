@@ -13,23 +13,23 @@ recordings_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw"
 projects_dir = "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/projects/" #?
 
 ## SLEAP paths
-slp_annotations_dir = "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/projects/annotations"
-predictions_dir = "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/projects/predictions" #2D
+slp_annotations_dir = "/home/il620/beneuro_pose_estimation/projects/annotations"
+predictions_dir = "/home/il620/beneuro_pose_estimation/projects/predictions" #2D
 slp_models_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/models/h1_new_setup"
-skeleton_path = f"{repo_path}/beneuro_pose_estimation/sleap/skeleton.json"
-predicition_eval_dir = "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/predictions/evaluation"
+skeleton_path = f"{repo_dir}/beneuro_pose_estimation/sleap/skeleton.json"
+predicition_eval_dir = "/home/il620/beneuro_pose_estimation/projects/predictions/evaluation"
 
 input_2Dpred = slp_annotations_dir # can be recordings_dir or projects_dir or slp_annotations_dir
 
 ## Anipose paths
 # path to 3D pose estimation directory
-complete_projects_dir = "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/projects/complete_projects"
+complete_projects_dir = "/home/il620/beneuro_pose_estimation/projects/complete_projects"
 # path to calibration videos directory
 calibration_vid_dir = "/home/il620/beneuro_pose_estimation/calibration-videos/ChAruCo_W5_H4" #?
 # path to the calibration output file directory
 calibration_dir = complete_projects_dir 
 
-
+default_sessions = []
 
 
 #### CAMERAS
