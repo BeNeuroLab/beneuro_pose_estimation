@@ -39,3 +39,13 @@ environment and separate from `bnd`.
       $ pip install "anipose<1.1" 
       $ pip install --upgrade apptools
       ```
+   
+   The key package versions are:
+      ```text
+      # Name                    Version                   Build  Channel
+      anipose                   1.0.1                    pypi_0    pypi
+      aniposelib                0.5.1                    pypi_0    pypi
+      sleap-anipose             0.1.8                    pypi_0    pypi
+      opencv-contrib-python     4.6.0.66                 pypi_0    pypi
+      opencv-python             4.10.0.84                pypi_0    pypi
+      ```
