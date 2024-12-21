@@ -4,32 +4,35 @@ from sleap.info.feature_suggestions import (
 )
 from aniposelib.boards import CharucoBoard
 
-####### CONFIGURATIONS
+############### CONFIGURATIONS
+######### PATHS
 
-#### PATHS
 repo_dir = "/home/il620/beneuro_pose_estimation"
 recordings_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw" 
 # file format: "M043/M043_2024_10_23_11_15/M043_2024_10_23_11_15_cameras/M043_2024_10_23_11_15_camera_1.avi"
-projects_dir = "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/projects/" #?
+projects_dir = "/home/il620/beneuro_pose_estimation/projects" #?
 
 ## SLEAP paths
 slp_annotations_dir = "/home/il620/beneuro_pose_estimation/projects/annotations"
+slp_training_dir = "/home/il620/beneuro_pose_estimation/projects/training"
 predictions_dir = "/home/il620/beneuro_pose_estimation/projects/predictions" #2D
-slp_models_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/models/h1_new_setup"
+slp_models_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/models/h1_new_setup" # will change this
+slp_training_config_path = "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/models/h1_new_setup"
+
 skeleton_path = f"{repo_dir}/beneuro_pose_estimation/sleap/skeleton.json"
 predicition_eval_dir = "/home/il620/beneuro_pose_estimation/projects/predictions/evaluation"
 
-input_2Dpred = slp_annotations_dir # can be recordings_dir or projects_dir or slp_annotations_dir
+# input_2Dpred = slp_annotations_dir # can be recordings_dir or projects_dir or slp_annotations_dir
+input_2Dpred = recordings_dir
 
 ## Anipose paths
 # path to 3D pose estimation directory
 complete_projects_dir = "/home/il620/beneuro_pose_estimation/projects/complete_projects"
 # path to calibration videos directory
-calibration_vid_dir = "/home/il620/beneuro_pose_estimation/calibration-videos/ChAruCo_W5_H4" #?
+calib_vid_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/calibration-videos" #?
 # path to the calibration output file directory
-calibration_dir = complete_projects_dir 
+calibration_dir = f"{projects_dir}/calibrations" 
 
-default_sessions = []
 
 
 #### CAMERAS
@@ -56,7 +59,7 @@ camera_name_mapping = {
 #### SLEAP config
 
 ## SLEAP annotation
-sessions_to_annotate = default_sessions
+sessions_to_annotate = []
 frame_selection_pipeline = FeatureSuggestionPipeline(
     per_video=50,
     scale=0.25,
@@ -68,9 +71,11 @@ frame_selection_pipeline = FeatureSuggestionPipeline(
     per_cluster=5,
     )
 ## SLEAP training
-training_sessions = default_sessions
+
+training_sessions = []
+
 ## SLEAP 2D predictions
-sessions_to_predict = default_sessions
+sessions_to_predict = []
 
 # SLEAP tracking 
 frames_to_predict = None
@@ -127,5 +132,30 @@ constraints = [[0,1],[0,3],[2,17],[16,17],[1,16],[5,18],[4,18],[6,7],[6,10],[7,8
 
 board = CharucoBoard(5, 4, square_length=10, marker_length=6, marker_bits=4, dict_size=250)
 fisheye = False
+
+
+# Triangulation parameters
+triangulation_params = {
+    "scale_smooth": 5,
+    "scale_length": 4,
+    "scale_length_weak": 1,
+    "reproj_error_threshold": 5,
+    "reproj_loss": "l2",
+    "n_deriv_smooth": 2
+}
+frame_window = 1000
+
+
+# Angle calculation config
+angles = {
+                "right_knee": ["hip_center", "right_knee", "right_ankle"],
+                "left_knee": ["hip_center", "left_knee", "left_ankle"],
+                "right_ankle": ["right_knee", "right_ankle", "right_foot"],
+                "left_ankle": ["left_knee", "left_ankle", "left_foot"],
+                "right_wrist": ["right_elbow", "right_wrist", "right_paw"],
+                "left_wrist": ["left_elbow", "left_wrist", "left_paw"],
+                "right_elbow": ["right_shoulder", "right_elbow", "right_wrist"],
+                "left_elbow": ["left_shoulder", "left_elbow", "left_wrist"]
+            }
 
 
