@@ -1,18 +1,39 @@
 """
 Module for SLEAP processing
 TBD
-- test training
-- add evaluation
+- test training 
+- add evaluation - metrics and hyperparameters; models comparison
+
+
 
 -> define paths in repo_path/beneuro_pose_estimation/params.py
--> from repo path run command line:
+ 
+-> to run as package (in dev stage):
+conda activate bnp
+cd repo_path
 
-python -m scripts.annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
-python -m scripts.predictions --sessions session_name --cameras camera_name (to get 2D predictions)
-python -m scripts.visualize_predictions --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
-python -m scripts.create_annotation_projects --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
+python -m beneuro_pose_estimation.cli annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
+python -m beneuro_pose_estimation.cli predict-2D --sessions session_name --cameras camera_name (to get 2D predictions)
+python -m beneuro_pose_estimation.cli visualize-2D --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
+python -m beneuro_pose_estimation.cli create-annotation-projects --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
+python -m beneuro_pose_estimation.cli train --sessions session_name --cameras camera_name (to train models)
+# cameras argument optional - default = params.default_cameras
 
-cameras argument optional - default = params.default_cameras
+-> after package installation:
+conda activate bnp
+
+pose annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
+pose predict-2D --sessions session_name --cameras camera_name (to get 2D predictions)
+pose visualize-2D --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
+pose create-annotation-projects --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
+pose train --sessions session_name --cameras camera_name (to train models)
+# cameras argument optional - default = params.default_cameras
+
+
+## another option is to run - need to change back some things 
+python sleapTools.py get_2Dpredictions --sessions session_names --cameras cameras_names 
+python sleapTools.py annotate_video --sessions session_names --cameras cameras_names 
+etc
 """
 import sys
 import os
@@ -28,7 +49,7 @@ import random
 import json
 import matplotlib.pyplot as plt
 import cv2
-
+import json
 from typing import Dict, List, Optional, Union
 
 from sleap.io.video import Video
@@ -41,8 +62,11 @@ import sleap
 # import argparse
 
 
-
-# annotating on predictions 
+def generate_model_evaluation(model):
+    """
+    TBD
+    """
+    return 
 
 def select_frames_to_annotate(session,camera,pipeline = params.frame_selection_pipeline,new_video_path = None):
     """
@@ -51,31 +75,39 @@ def select_frames_to_annotate(session,camera,pipeline = params.frame_selection_p
     - Creates a new .mp4 video for faster processing 
 
     """
-
+    
     # Define input video path
     animal = session.split("_")[0]
+    # video_path = f"{params.recordings_dir}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
     video_path = f"{params.recordings_dir}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-    video = Video.from_filename(video_path)
-    
-    # Run frames selection pipeline
-    pipeline.run_disk_stage([video])
-    frame_data = pipeline.run_processing_state()
+    try: 
+        video = Video.from_filename(video_path)
+        
+        # Run frames selection pipeline
+        pipeline.run_disk_stage([video])
+        frame_data = pipeline.run_processing_state()
 
-    # Define selected frames path 
-    frames_dir = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations"
-    os.makedirs(frames_dir, exist_ok=True)
-    # Save selected frames as images in the frame directory
-    for item in frame_data.items:
-        frame_idx = item.frame_idx
-        frame = video.get_frame(frame_idx)
-        plt.imsave(os.path.join(frames_dir, f'{session}_{camera}_frame_{frame_idx}.png'), frame)
-    
-    logging.info(f"Selected frames saved for {session}, {camera}")
-    
+        # Define selected frames path 
+        frames_dir = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations"
+        os.makedirs(frames_dir, exist_ok=True)
+        # Save selected frames as images in the frame directory
+        for item in frame_data.items:
+            frame_idx = item.frame_idx
+            frame = video.get_frame(frame_idx)
+            plt.imsave(os.path.join(frames_dir, f'{session}_{camera}_frame_{frame_idx}.png'), frame)
+        
+        logging.info(f"Selected frames saved for {session}, {camera}")
+    except Exception as e:
+        logging.error(f"An error occurred while selecting frames to annotate for session {session}, camera {camera}: {e}")
+
     # create new video from the selected frames
     if new_video_path is None:
        new_video_path = f"{frames_dir}/{session}_{camera}_annotations.mp4"
-    create_video_from_frames(frames_dir,new_video_path) 
+    
+    try:
+        create_video_from_frames(frames_dir,new_video_path) 
+    except Exception as e:
+        logging.error(f"An error occurred while creating the annotation video for session {session}, camera {camera}: {e}")
 
     
     
@@ -137,7 +169,7 @@ def create_annotation_project(session, camera):
     '''
     animal = session.split("_")[0]
     # Paths
-    video_path = f"{params.recordings_dir}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+    # video_path = f"{params.recordings_dir}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
     select_frames_to_annotate(session,camera,params.frame_selection_pipeline)
     labels_output_path = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/{session}_{camera}.slp"
     annotations_dir_path = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/"
@@ -206,10 +238,7 @@ def create_prediction_project(session, camera):
     '''
     select frames to predict from from a raw video and save them in a slp project to perform tracking
     TBD if needed
-    '''
-
-    project_path = f"{params.slp_projects_path}/{session}/{camera}/{session}_{camera}.slp"
-    
+    '''  
     
     return 
 
@@ -228,59 +257,106 @@ def annotate_video(sessions = params.sessions_to_annotate, cameras = params.defa
         cameras = [cameras]
     # for each session, check if a sleap projects exists already or not
     for session in sessions:
-        session_dir = f"{params.slp_annotations_dir}/{session}_annotations"
-        os.makedirs(session_dir, exist_ok=True)
-        for camera in cameras:
-            project_dir = f"{session_dir}/{session}_{camera}_annotations"
-            project_path = f"{project_dir}/{session}_{camera}.slp"
-            os.makedirs(project_dir, exist_ok=True)
-            if not os.path.exists(project_path):
-                create_annotation_project(session,camera)
-    
-            logging.info(f"Launching annotation GUI...")
-            subprocess.run(["sleap-label", project_path]) # first test if the project is created
+        try:
+            session_dir = f"{params.slp_annotations_dir}/{session}_annotations"
+            os.makedirs(session_dir, exist_ok=True)
+            for camera in cameras:
+                try:
+                    project_dir = f"{session_dir}/{session}_{camera}_annotations"
+                    project_path = f"{project_dir}/{session}_{camera}.slp"
+                    os.makedirs(project_dir, exist_ok=True)
+                    if not os.path.exists(project_path):
+                        create_annotation_project(session,camera)
+            
+                    logging.info(f"Launching annotation GUI...")
+                    subprocess.run(["sleap-label", project_path]) # first test if the project is created
+                except Exception as e:
+                    logging.error(f"Failed to process camera {camera} for session {session}: {e}")
+        except Exception as e:
+            logging.error(f"Failed to process session {session}: {e}")
 
-
-def create_training_project(camera, sessions):
+def create_training_file(camera, sessions):
     """
     .slp project for a specific camera - merging projects 
     """
     # Path to save the combined training project
-    combined_project_path = f"{params.slp_annotations_dir}/{camera}.slp"
+    combined_project_path = f"{params.slp_training_dir}/{camera}.slp"
+    
     all_labeled_frames = []
 
     for session in sessions:
-        # Define path to the session-specific .slp file
-        session_slp_path = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/{session}_{camera}.slp"
-        
-        # Check if the .slp file exists for the session
-        if not os.path.exists(session_slp_path):
-            logging.info(f"SLP project file {session_slp_path} does not exist. Skipping session {session}.")
-            continue
+        try:
+            # Define path to the session-specific .slp file
+            session_slp_path = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/{session}_{camera}.slp"
+            
+            # Check if the .slp file exists for the session
+            if not os.path.exists(session_slp_path):
+                logging.info(f"SLP project file {session_slp_path} does not exist. Skipping session {session}.")
+                continue
 
-        # Load the .slp project and extract labeled frames
-        session_labels = sleap.load_file(session_slp_path)
-        session_labeled_frames = session_labels.labeled_frames
-        all_labeled_frames.extend(session_labeled_frames)
-        logging.info(f"Added {len(session_labeled_frames)} frames from session {session} for camera {camera}.")
+            # Load the .slp project and extract labeled frames
+            session_labels = sleap.load_file(session_slp_path)
+            session_labeled_frames = session_labels.labeled_frames
+            all_labeled_frames.extend(session_labeled_frames)
+            logging.info(f"Added {len(session_labeled_frames)} frames from session {session} for camera {camera}.")
+        except Exception as e:
+            logging.error(f"An error occurred while processing session {session} for camera {camera}: {e}")
 
     # Create a new Labels object with the combined labeled frames
     combined_labels = Labels(labeled_frames=all_labeled_frames)
 
     # Ensure the directory for the combined project exists
     os.makedirs(os.path.dirname(combined_project_path), exist_ok=True)
-
-    # Save the combined Labels object to a new .slp file
-    combined_labels.save(combined_project_path)
-    logging.info(f"Combined training project saved at {combined_project_path}")
+    try:
+        # Save the combined Labels object to a new .slp file
+        combined_labels.save(combined_project_path)
+        logging.info(f"Combined training project saved at {combined_project_path}")
+    except Exception as e:
+        logging.error(f"Failed to save combined training project: {e}")
 
     return
 
+def create_training_projects(cameras, sessions):
+    """
+    .slp project for a specific camera - merging projects 
+    """
+    if isinstance(cameras, str):
+        cameras = [cameras]
+    for camera in cameras:
+        training_dir = f"{params.slp_training_dir}/{camera}"
+        os.makedirs(training_dir, exist_ok=True)
+        labels_file = f"{params.slp_training_dir}/{camera}/{camera}.slp"
+        config_file = f"{params.slp_training_dir}/{camera}/training_config.json"
 
-def train_models(sessions = params.training_sessions, cameras = params.default_cameras): 
+        # Check if the .slp file exists; if not, run create_training_file
+        if not os.path.exists(labels_file):
+            logging.info(f"{labels_file} does not exist. Creating training file...")
+            create_training_file(camera, sessions)
+
+        # Ensure configuration file exists
+        if not os.path.exists(config_file):
+            logging.info(f"Configuration file for {camera} does not exist, using default one")
+            source_path = params.training_config_path
+            destination_path = "/path/to/destination_folder/destination_file.json"
+
+            # Read JSON data from the source file
+            with open(source_path, 'r') as src_file:
+                data = json.load(src_file)
+
+            # Write JSON data to the destination file
+            with open(destination_path, 'w') as dest_file:
+                json.dump(data, dest_file, indent=4)
+
+            logging.info(f"File copied from {source_path} to {destination_path}")
+
+    return
+
+def create_training_config_file(config_file):
+    return
+def train_models(cameras = params.default_cameras, sessions = params.training_sessions): 
     '''
     TBD 
-    - create config file with training parameters
+    - create config file with training parameters; check if config file exists, if not create it using the parameters in params
     - check creation of training project
     '''
     if isinstance(sessions, str):
@@ -293,24 +369,27 @@ def train_models(sessions = params.training_sessions, cameras = params.default_c
     # Run sleap-train for each session and camera combination
     for camera in cameras:
         # Define paths for model and labels
-        model_dir = os.path.join(params.slp_models_dir, camera)
-        labels_file = os.path.join(params.slp_annotations_dir, f"{camera}.slp")
-        config_file = os.path.join(model_dir, "single_instance.json")
+        # model_dir = os.path.join(params.slp_models_dir, camera)
+        training_dir = f"{params.slp_training_dir}/{camera}"
+        os.makedirs(training_dir, exist_ok=True)
+
+        labels_file = f"{params.slp_training_dir}/{camera}/{camera}.slp"
+        config_file = f"{params.slp_training_dir}/{camera}/training_config.json"
 
         # Check if the .slp file exists; if not, run create_training_file
         if not os.path.exists(labels_file):
             logging.info(f"{labels_file} does not exist. Creating training file...")
-            create_training_project(camera, sessions)
+            create_training_file(camera, sessions)
 
-        # Ensure model directory exists
-        if not os.path.exists(model_dir):
-            logging.info(f"Model directory for {camera} does not exist, skipping.")
-            continue
+        # Ensure configuration file exists
+        if not os.path.exists(config_file):
+            create_training_config_file(config_file)
+            logging.info(f"Configuration file for {camera} created.")
         
         # Run sleap-train command
         logging.info(f"Training model for {camera}...")
         command = ["sleap-train", config_file, labels_file]
-        result = subprocess.run(command, cwd=model_dir)
+        result = subprocess.run(command, cwd=training_dir)
         
         if result.returncode == 0:
             logging.info(f"Finished training for {camera}.")
@@ -320,34 +399,6 @@ def train_models(sessions = params.training_sessions, cameras = params.default_c
     logging.info("All training has been executed.")
 
 
-
-
-def evaluate_model(camera):
-    """
-    TBD
-    """
-    # Load evaluation metrics
-    metrics_path = f"{params.slp_models_dir}/{camera}/metrics.npz"
-    metrics = np.load(metrics_path)
-    logging.info("Localization Error (50th percentile):", metrics["dist.p50"])
-    logging.info("Mean Average Precision (OKS):", metrics["oks_voc.mAP"])
-
-    labels_path = os.path.join(params.slp_annotations_dir, f"{camera}.slp")
-    # Load ground truth and predicted labels for comparison
-    labels_gt = sleap.load_file(labels_path)
-    labels_pr = sleap.load_file(f"{params.slp_models_dir}/{camera}/validation_predictions.slp")
-
-    # Metric calculations
-    mean_error, median_error = calculate_localization_error(labels_gt, labels_pr)
-    pck = calculate_pck(labels_gt, labels_pr, threshold=5)
-    oks = calculate_oks(labels_gt, labels_pr, sigmas=[0.1] * len(labels_gt[0].instances[0].points), image_size=(640, 480))
-
-    logging.info(f"Localization error: {mean_error}, {median_error}")
-    logging.info(f"PCK (5-pixel threshold): {pck}")
-    logging.info(f"Average OKS: {oks}")
-
-
-    return
 
 def select_frames_to_predict():
     return 
@@ -367,55 +418,53 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
         sessions = [sessions]
     if isinstance(cameras, str):
         cameras = [cameras]
-    os.makedirs(os.path.dirname(params.predictions_dir), exist_ok=True)
-    
+    try:
+        os.makedirs(os.path.dirname(params.predictions_dir), exist_ok=True)
+    except Exception as e:
+        logging.error(f"Failed to create predictions directory: {e}")
+        return
+
         
     tracking_options = params.tracking_options
 
     ## If input, model, output files are specified, run directly - could remove this
-    if input_file is not None and output_file is not None and model_path is not None:
-        command = [
-                    "sleap-track",
-                    input_file,
-                    "--video.index", "0",
-                    "-m", model_path,
-                    "-o", output_file
-                ]
-                
-        # Add frames to predict on if specified - otherwise all frames
-        if frames:
-            command.extend(["--frames", frames])
+    if input_file is not None:
+        if os.path.isfile(input_file) and output_file is not None and model_path is not None:
+            command = [
+                        "sleap-track",
+                        input_file,
+                        "--video.index", "0",
+                        "-m", model_path,
+                        "-o", output_file
+                    ]
+                    
+            # Add frames to predict on if specified - otherwise all frames
+            if frames:
+                command.extend(["--frames", frames])
+            
+            # Add tracking options if specified
+            if tracking_options:
+                command.extend(tracking_options.split())
+            logging.info(f"Running sleap-track")
+            logging.info(f"Input file: {input_file}")
+            logging.info(f"Output file: {output_file}")
+            # Run the sleap-track command using subprocess
+            subprocess.run(command, check=True)
+            logging.info(f"Tracking completed\n")
         
-        # Add tracking options if specified
-        if tracking_options:
-            command.extend(tracking_options.split())
-
-        # Run the sleap-track command using subprocess
-        subprocess.run(command, check=True)
-        logging.info(f"Tracking completed\n")
-    
-    ## Otherwise go through the list of sessions and cameras
-    else:
-        for session in sessions:
-            animal = session.split("_")[0]
+        else:
+            input_dir = input_file
             for camera in cameras:
                 model_dir = f"{params.slp_models_dir}/{camera}"
                 if not os.path.exists(model_dir):
                     logging.info(f"Model directory for {camera} does not exist, skipping.")
                     continue
                 model_path = f"{model_dir}/training_config.json"
-
-                # Different cases for different input directories because different saving formats are used 
-                if "raw" in params.input_2Dpred: 
-                    input_file = f"{params.input_2Dpred}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-                elif "annotations" in params.input_2Dpred:
-                    input_file = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/{session}_{camera}.slp"
-                else:
-                    input_file = f"{params.input_2Dpred}/{session}/{camera}/{session}_{camera}.slp"
-                output_file = f"{params.predictions_dir}/{session}_{camera}.slp.predictions.slp"
+                input_file = f"{input_dir}/{params.camera_name_mapping.get(camera, camera)}.avi"
+                output_file = f"{params.predictions_dir}/{sessions[0]}_{camera}.slp.predictions.slp"
 
 
-                logging.info(f"Running sleap-track for session {session} and camera {camera}")
+                logging.info(f"Running sleap-track for camera {camera}")
                 logging.info(f"Input file: {input_file}")
                 logging.info(f"Output file: {output_file}")
 
@@ -439,7 +488,60 @@ def get_2Dpredictions(sessions = params.sessions_to_predict, cameras = params.de
 
                 # Run the sleap-track command using subprocess
                 subprocess.run(command, check=True)
-                logging.info(f"Tracking completed for session {session}, camera {camera}\n")
+                logging.info(f"Tracking completed for session {sessions[0]}, camera {camera}\n")
+
+    
+    ## Otherwise go through the list of sessions and cameras
+    else:
+        for session in sessions:
+            animal = session.split("_")[0]
+            for camera in cameras:
+                try:
+                    model_dir = f"{params.slp_models_dir}/{camera}"
+                    if not os.path.exists(model_dir):
+                        logging.info(f"Model directory for {camera} does not exist, skipping.")
+                        continue
+                    model_path = f"{model_dir}/training_config.json"
+
+                    # Different cases for different input directories because different saving formats are used 
+                    if "raw" in params.input_2Dpred: 
+                        input_file = f"{params.input_2Dpred}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                    elif "annotations" in params.input_2Dpred:
+                        input_file = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/{session}_{camera}.slp"
+                    else:
+                        input_file = f"{params.input_2Dpred}/{session}/{camera}/{session}_{camera}.slp"
+                    output_file = f"{params.predictions_dir}/{session}_{camera}.slp.predictions.slp"
+
+
+                    logging.info(f"Running sleap-track for session {session} and camera {camera}")
+                    logging.info(f"Input file: {input_file}")
+                    logging.info(f"Output file: {output_file}")
+
+                    # construct sleap-track command 
+
+                    command = [
+                        "sleap-track",
+                        input_file,
+                        "--video.index", "0",
+                        "-m", model_path,
+                        "-o", output_file
+                    ]
+                    
+                    # Add frames to predict on if specified - otherwise all frames
+                    if frames:
+                        command.extend(["--frames", frames])
+                    
+                    # Add tracking options if specified
+                    if tracking_options:
+                        command.extend(tracking_options.split())
+
+                    # Run the sleap-track command using subprocess
+                    subprocess.run(command, check=True)
+                    logging.info(f"Tracking completed for session {session}, camera {camera}\n")
+
+                except Exception as e:
+                    logging.error(f"Failed to process session {session}, camera {camera}: {e}")
+
 
     return
 
@@ -460,123 +562,3 @@ def visualize_predictions(sessions, cameras = params.default_cameras):
             subprocess.run(["sleap-label", predictions_path])
     return
 
-
-def visualize_prediction_plot(session, camera, frames_to_visualize = None):
-    """
-    Visualize prediction for a certain session and camera (can change to multiple), and specifc frames
-    Plots predictions over each (specified) predicted frame
-    """
-    # load predictions 
-    predictions_path = f"{params.predictions_dir}/{session}_{camera}.slp.predictions.slp"
-    labels = sleap.load_file(predictions_path)
-
-    # load video
-    animal = session.split("_")[0]
-    if "raw" in params.input_2Dpred:
-        video_path = f"{params.input_2Dpred}/{animal}/{session}/{session}_cameras/{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-    
-    # handle other inputs - TBD
-    video = sleap.io.video.Video.from_filename(video_path)
-    # iterate over frames with predictions
-    for labeled_frame in labels:
-        frame_idx = labeled_frame.frame_idx
-
-        # skip frames not in the list
-        if  frames_to_visualize is not None and frame_idx not in  frames_to_visualize:
-            continue
-
-        # Fetch the specific frame from the video
-        frame = video.get_frame(frame_idx)
-        
-        # Plot grayscale frame
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        plt.imshow(frame_gray, cmap="gray")  # Use grayscale colormap
-        
-        # Overlay keypoints and skeleton
-        for instance in labeled_frame.instances:
-            # Draw keypoints
-            for node in instance.skeleton.nodes:
-                point = instance[node]
-                if point is not None:  # Check if the point is valid
-                    plt.scatter(point.x, point.y, s=20, c="red", marker="o")  # Draw keypoint in red
-            
-            # Draw edges between connected nodes based on skeleton structure
-            for edge in instance.skeleton.edges:
-                pt1 = instance[edge[0]]
-                pt2 = instance[edge[1]]
-                if pt1 is not None and pt2 is not None:
-                    plt.plot([pt1.x, pt2.x], [pt1.y, pt2.y], "r-", linewidth=1)  # Draw skeleton edges
-
-        plt.title(f"Predictions for frame {frame_idx}, session: {session}, camera: {camera}")
-        plt.axis("off")  # Hide axis for cleaner visualization
-        plt.show()  
-        # save image in params.predicition_eval_path
-    return
-
-
-# def parse_arguments():
-#     parser = argparse.ArgumentParser(description="SLEAP Processing Commands")
-#     subparsers = parser.add_subparsers(dest="command", required=True, help="Select a command to run")
-
-#     # Subparser for get_2Dpredictions
-#     parser_predict = subparsers.add_parser("get_2Dpredictions", help="Run 2D predictions")
-#     parser_predict.add_argument("--sessions", nargs="+", default=params.sessions_to_predict, help="List of sessions to process")
-#     parser_predict.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to process")
-#     parser_predict.add_argument("--frames", nargs="*", default=params.frames_to_predict, help="Specific frames to predict on")
-#     parser_predict.add_argument("--input_file", type=str, help="Optional input file path for predictions")
-#     parser_predict.add_argument("--output_file", type=str, help="Optional output file path for predictions")
-#     parser_predict.add_argument("--model_path", type=str, help="Optional path to the SLEAP model for predictions")
-
-#     # Subparser for visualize_predictions
-#     parser_visualize = subparsers.add_parser("visualize_predictions", help="Visualize 2D predictions")
-#     parser_visualize.add_argument("--sessions", nargs="+", required=True, help="List of sessions to visualize predictions for")
-#     parser_visualize.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to visualize predictions for")
-
-#     # Subparser for annotate_video
-#     parser_annotate = subparsers.add_parser("annotate_video", help="Annotate video frames")
-#     parser_annotate.add_argument("--sessions", nargs="+", default=params.sessions_to_annotate, help="List of sessions to annotate")
-#     parser_annotate.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras to annotate")
-
-#     # Subparser for train_models
-#     parser_train = subparsers.add_parser("train_models", help="Train models for sessions and cameras")
-#     parser_train.add_argument("--sessions", nargs="+", default=params.training_sessions, help="List of sessions for training")
-#     parser_train.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras for training")
-
-#     # Subparser for evaluate_model
-#     parser_evaluate = subparsers.add_parser("evaluate_model", help="Evaluate trained model for a camera")
-#     parser_evaluate.add_argument("--camera", nargs="*", default=params.default_cameras[0], help="Camera to evaluate")
-
-#      # Subparser for create_annotation_projects
-#     parser_create_annotations = subparsers.add_parser("create_annotation_projects", help="Create annotation projects for sessions and cameras")
-#     parser_create_annotations.add_argument("--sessions", nargs="+", default=params.sessions_to_annotate, help="List of sessions for creating annotation projects")
-#     parser_create_annotations.add_argument("--cameras", nargs="*", default=params.default_cameras, help="List of cameras for creating annotation projects")
-
-#     return parser.parse_args()
-
-# def main():
-#     args = parse_arguments()
-#     set_logging()
-#     # Execute the appropriate function based on the command
-#     if args.command == "get_2Dpredictions":
-#         get_2Dpredictions(
-#             sessions=args.sessions,
-#             cameras=args.cameras,
-#             frames=args.frames,
-#             input_file=args.input_file,
-#             output_file=args.output_file,
-#             model_path=args.model_path
-#         )
-#     elif args.command == "visualize_predictions":
-#         visualize_predictions(sessions=args.sessions, cameras=args.cameras)
-#     elif args.command == "annotate_video":
-#         annotate_video(sessions=args.sessions, cameras=args.cameras)
-#     elif args.command == "train_models":
-#         train_models(sessions=args.sessions, cameras=args.cameras)
-#     elif args.command == "create_annotation_projects":
-#         create_annotation_projects(sessions=args.sessions, cameras=args.cameras)
-#     elif args.command == "evaluate_model":
-#         evaluate_model(camera=args.camera)
-    
-
-# if __name__ == "__main__":
-#     main()
