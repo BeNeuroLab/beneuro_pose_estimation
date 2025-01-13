@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "pose=beneuro_pose_estimation.cli:main",  # Register the CLI command
+            "bnp=beneuro_pose_estimation.cli:main",  # Register the CLI command
         ],
     },
     python_requires=">=3.7",
