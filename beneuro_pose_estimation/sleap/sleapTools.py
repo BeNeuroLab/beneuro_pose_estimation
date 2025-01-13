@@ -22,11 +22,11 @@ python -m beneuro_pose_estimation.cli train --sessions session_name --cameras ca
 -> after package installation:
 conda activate bnp
 
-pose annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
-pose predict-2D --sessions session_name --cameras camera_name (to get 2D predictions)
-pose visualize-2D --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
-pose create-annotation-projects --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
-pose train --sessions session_name --cameras camera_name (to train models)
+bnp annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
+bnp predict-2D --sessions session_name --cameras camera_name (to get 2D predictions)
+bnp visualize-2D --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
+bnp create-annotation-projects --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
+bnp train --sessions session_name --cameras camera_name (to train models)
 # cameras argument optional - default = params.default_cameras
 
 
@@ -59,13 +59,121 @@ from sleap.info.feature_suggestions import (
     ParallelFeaturePipeline,
 )
 import sleap
+import seaborn as sns
+import pandas as pd
 # import argparse
 
 
-def generate_model_evaluation(model):
+def compare_models(models_folder,test_gt_path = None):
     """
     TBD
+
     """
+    metrics_list = []
+    
+    for folder in os.listdir(models_folder):
+        model_folder = os.path.join(models_folder, folder)
+        if os.path.isdir(model_folder):
+            try:
+                # Load and evaluate model
+                if test_gt_path is not None:
+                    predictor = sleap.load_model(model_folder)
+                    labels_gt = sleap.load_file(test_gt_path)
+                    labels_pr = predictor.predict(labels_gt)
+                    metrics = sleap.nn.evals.evaluate(labels_gt, labels_pr)
+                else:
+                    metrics = sleap.load_metrics(model_folder, split="val")
+                
+                # Flatten metrics into a single row for DataFrame
+                metrics_flat = {
+                    "Model": folder,
+                }
+                for key, value in metrics.items():
+                    if isinstance(value, (float, int)):
+                        metrics_flat[key] = value
+                    elif isinstance(value, (list, np.ndarray)):
+                        metrics_flat[key] = np.mean(value)  # Use mean for lists/arrays
+                
+                metrics_list.append(metrics_flat)
+            
+            except Exception as e:
+                print(f"Error evaluating model in folder {folder}: {e}")
+    
+    # Create DataFrame from collected metrics
+    metrics_df = pd.DataFrame(metrics_list)
+    metrics_df.to_csv(output_csv, index=False)
+    print(f"Metrics comparison saved to {output_csv}")
+    
+    return metrics_df 
+
+def find_best_models(metrics_df,metric = None):
+    """
+    Print the best model for each metric.
+    
+    Args:
+        metrics_df (pd.DataFrame): DataFrame containing metrics for all models.
+    """
+    if metric:
+        # Check if the specified metric exists in the DataFrame
+        if metric not in metrics_df.columns:
+            print(f"Metric '{metric}' not found in the DataFrame.")
+            return
+        
+        if pd.api.types.is_numeric_dtype(metrics_df[metric]):
+            best_index = metrics_df[metric].idxmax()
+            best_model = metrics_df.iloc[best_index]["Model"]
+            print(f"Best model for {metric}: {best_model}")
+        else:
+            print(f"Metric '{metric}' is not numeric and cannot be evaluated.")
+    else:
+        # Evaluate all metrics
+        best_models = {}
+        for column in metrics_df.columns:
+            if column != "Model" and pd.api.types.is_numeric_dtype(metrics_df[column]):
+                best_index = metrics_df[column].idxmax()
+                best_models[column] = metrics_df.iloc[best_index]["Model"]
+        
+        print("Best models for each metric:")
+        for metric_name, model in best_models.items():
+            print(f"{metric_name}: {model}")
+
+def evaluate_model(model_path,test_gt_path = None):
+    """
+    TBD
+
+    """
+    if test_gt_path is not None:
+        predictor = sleap.load_model(model_path)
+        labels_gt = sleap.load_file(test_gt_path)
+        labels_pr = predictor.predict(labels_gt)
+        metrics = sleap.nn.evals.evaluate(labels_gt, labels_pr)
+    else:
+        metrics = sleap.load_metrics(model_path, split="val")
+    plt.figure(figsize=(6, 3), dpi=150, facecolor="w")
+    sns.histplot(metrics["dist.dists"].flatten(), binrange=(0, 20), kde=True, kde_kws={"clip": (0, 20)}, stat="probability")
+    plt.xlabel("Localization error (px)")
+    plt.figure(figsize=(6, 3), dpi=150, facecolor="w")
+    sns.histplot(metrics["oks_voc.match_scores"].flatten(), binrange=(0, 1), kde=True, kde_kws={"clip": (0, 1)}, stat="probability")
+    plt.xlabel("Object Keypoint Similarity")
+    plt.figure(figsize=(4, 4), dpi=150, facecolor="w")
+    for precision, thresh in zip(metrics["oks_voc.precisions"][::2], metrics["oks_voc.match_score_thresholds"][::2]):
+        plt.plot(metrics["oks_voc.recall_thresholds"], precision, "-", label=f"OKS @ {thresh:.2f}")
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.legend(loc="lower left")
+    node_names = metrics.get("node_names", [f"Node {i}" for i in range(metrics["dist.dists"].shape[1])])
+    dists_df = pd.DataFrame(metrics["dist.dists"], columns=node_names)
+    dists_melted = dists_df.melt(var_name="Node", value_name="Error")
+
+    # Create the boxplot
+    plt.figure(figsize=(8, 6), dpi=150, facecolor="w")
+    sns.boxplot(data=dists_melted, x="Error", y="Node", fliersize=0)
+    sns.stripplot(data=dists_melted, x="Error", y="Node", alpha=0.5, jitter=True, color="red")
+    plt.title("Localization Error by Node")
+    plt.xlabel("Error (px)")
+    plt.ylabel("Node")
+    plt.grid(True)
+    plt.show()
     return 
 
 def select_frames_to_annotate(session,camera,pipeline = params.frame_selection_pipeline,new_video_path = None):
@@ -373,8 +481,8 @@ def train_models(cameras = params.default_cameras, sessions = params.training_se
         training_dir = f"{params.slp_training_dir}/{camera}"
         os.makedirs(training_dir, exist_ok=True)
 
-        labels_file = f"{params.slp_training_dir}/{camera}/{camera}.slp"
-        config_file = f"{params.slp_training_dir}/{camera}/training_config.json"
+        labels_file = f"{params.slp_training_dir}/{camera}.slp"
+        config_file = f"{params.slp_training_dir}/models/{camera}/training_config.json"
 
         # Check if the .slp file exists; if not, run create_training_file
         if not os.path.exists(labels_file):
