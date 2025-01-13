@@ -1,9 +1,9 @@
 """
 Module to carry out Anipose operations 
 TBD:
-- add reprojection error 
+- test evaluate_reprojection
 - check logging
-
+-------------------------------
 conda activate bnp
 -> in dev:
 python -m beneuro_pose_estimation.cli pose-estimation --sessions session_name(s) 
@@ -35,20 +35,41 @@ import toml
 
 
 
-def generate_evaluation_report(project_dir, session):
+def evaluate_reprojection(reprojection_path, predictions_2D_dir,histogram_path = None):
     """
-    Generates a report on estimation evaluation, including reprojection errors in 3D estimation and 2D prediction model evaluation.
-    TBD!!!!!!!!!!!
+    Plots histogram of reprojection error.
+    Not tested
     """
-    for camera in params.default_cameras:
-        model_dir = ""
-        model_eval_path= sleapTools.generate_model_evaluation(model_dir)
-        combined_file = f"{project_dir}/{session}_pose_estimation_combined.h5"
-        report_file = f"{project_dir}/{session}_estimation_report.txt"
+    # Generate histogram using data from the combined file
+    detection_data = load_2D_predictions(predictions_2D_dir)
+    reprojection_data = np.load(reprojection_path)
+    slap.make_histogram(detection_data, reprojection_data, save_path=histogram_path)
+    logging.info(f"Reprojection histogram saved at {histogram_path}")
         
-    
-    logging.info(f"Estimation report saved to {report_file}")
-    return report_file
+    return 
+
+def load_2D_predictions(predictions_2D_dir):
+    '''
+    TBD - need to check that the order of cameras is the same as in reprojections
+    '''
+    predictions_list = []
+    cameras = params.default_cameras
+    session = os.path.basename(predictions_2D_dir)
+    for camera in cameras:
+        h5_file = f"{predictions_2D_dir}/{session}_{camera}.analysis.h5"
+        with h5py.File(h5_file, 'r') as f:
+            # Shape of 'tracks': (1, 2, n_nodes, n_frames)
+            tracks = f['tracks'][:]  # Read the data into memory
+            tracks = np.squeeze(tracks)  # Remove the leading dimension if it is 1
+            # Rearrange the dimensions to (n_frames, n_nodes, 2)
+            tracks = np.moveaxis(tracks, 1, -1)
+            predictions_list.append(tracks)
+
+    # Combine predictions from all cameras along a new first dimension (n_cams)
+    concatenated_predictions = np.stack(predictions_list, axis=0)
+
+    return concatenated_predictions
+
 
 def get_frame_count(h5_analysis_file):
     with h5py.File(h5_analysis_file, 'r') as f:
@@ -180,31 +201,52 @@ def compute_3Dpredictions(session, project_dir, calib_file_path, frame_window=pa
     n_frames = get_frame_count(f"{project_dir}/{params.default_cameras[0]}/{session}_{params.default_cameras[0]}.analysis.h5")
     windows = np.arange(0, n_frames, frame_window)
     windows = np.append(windows, n_frames)
-    print(project_dir)
+    reprojections_list = []  # List to store reprojections from each window
+
     for start, end in zip(windows[:-1], windows[1:]):
-        print(f"{start}, {end}")
+        print(f"Processing frames {start} to {end}")
         output_file = f"{project_dir}/{session}_triangulation_{start}_{end}.h5"
+        
         slap.triangulate(
-            p2d=project_dir, calib=calib_file_path, fname=output_file,
-            disp_progress=True, 
-            frames = (start, end),
-            constraints=params.constraints,  # Use constraints from params
+            p2d=project_dir,
+            calib=calib_file_path,
+            fname=output_file,
+            disp_progress=True,
+            frames=(start, end),
+            constraints=params.constraints,
             scale_smooth=params.triangulation_params["scale_smooth"],
             scale_length=params.triangulation_params["scale_length"],
             scale_length_weak=params.triangulation_params["scale_length_weak"],
             reproj_error_threshold=params.triangulation_params["reproj_error_threshold"],
             reproj_loss=params.triangulation_params["reproj_loss"],
             n_deriv_smooth=params.triangulation_params["n_deriv_smooth"]
-        
         )
+        
         logging.info(f"3D prediction file created: {output_file}")
+
         if eval:
-            reproj_output_file = f"{project_dir}/{session}_reprojections_{start}_{end}.h5"
-            slap.reproject(p3d=output_file ,calib= calib_file_path,frames=(start, end),fname=reproj_output_file)
-            #  output: (n_cams, n_frames, n_tracks, n_nodes, 2)
-            logging.info(f"Reprojection file created: {reproj_output_file}")
+            reproj_output = slap.reproject(
+                p3d=output_file,
+                calib=calib_file_path,
+                frames=(start, end)
+            )
+            logging.info(f"Reprojection created for frames {start} to {end}")
+            reprojections_list.append(reproj_output)
+
+    if reprojections_list:
+        reprojections_array = np.concatenate(reprojections_list, axis=1)  # Concatenate along the frames axis
+        logging.info(f"Reprojections concatenated with shape: {reprojections_array.shape}")
+
+        save_path = f"{project_dir}/{session}_reprojections.npy"
+        np.save(save_path, reprojections_array)
+        logging.info(f"Reprojections saved to {save_path}")
+        histogram_path = f"{project_dir}/{session}_reprojection_histogram.pdf"
+        evaluate_reprojection(reprojection_path = save_path,predictions_2D_dir = project_dir, histogram_path = histogram_path)
+
 
     combine_h5_files(session, windows, project_dir,eval)
+    
+    
     
 
 
@@ -225,25 +267,7 @@ def combine_h5_files(session, windows, project_dir,eval = False):
                     else:
                         combined_dataset.resize((combined_dataset.shape[0] + points3d_data.shape[0]), axis=0)
                         combined_dataset[-points3d_data.shape[0]:] = points3d_data
-            if eval:
-                reprojection_file = f"{project_dir}/{session}_reprojections_{start}_{end}.h5"
-                if os.path.exists(reprojection_file):
-                    with h5py.File(reprojection_file, 'r') as reproj_f:
-                        for camera in reproj_f.keys():
-                            reproj_data = reproj_f[camera][:]
-                            if f'reprojections/{camera}' not in combined_h5:
-                                # Create a dataset for the camera reprojections
-                                combined_reprojections = combined_h5.create_dataset(
-                                    f'reprojections/{camera}',
-                                    data=reproj_data,
-                                    maxshape=(None,) + reproj_data.shape[1:]
-                                )
-                            else:
-                                # Append data to the existing reprojection dataset
-                                combined_reprojections = combined_h5[f'reprojections/{camera}']
-                                combined_reprojections.resize((combined_reprojections.shape[0] + reproj_data.shape[0]), axis=0)
-                                combined_reprojections[-reproj_data.shape[0]:] = reproj_data
-
+            
     logging.info(f"Combined 3D predictions saved at {combined_file}")
 
 
@@ -372,7 +396,8 @@ def run_pose_estimation(sessions, log_file = None, projects_dir=params.complete_
         sleapTools.get_2Dpredictions(session,input_file = videos_folder)
         convert_2Dpred_to_h5(session)
         ###############################################
-        calib_file_path = get_most_recent_calib("M045_2024_11_20_11_35")
+        # calib_file_path = get_most_recent_calib("M045_2024_11_20_11_35")
+        calib_file_path = get_most_recent_calib(session)
         compute_3Dpredictions(session, calib_file_path=calib_file_path, project_dir = project_dir,eval = eval)
         labels_fname = f"{project_dir}/{session}_3d_predictions.csv"
         save_to_csv(session,f"{project_dir}/{session}_pose_estimation_combined.h5", labels_fname)
@@ -395,7 +420,4 @@ def run_pose_estimation(sessions, log_file = None, projects_dir=params.complete_
         combined_data.to_csv(combined_csv, index=False)
         logging.info(f"Angles computed and combined CSV saved at {combined_csv}")
 
-        # if eval:
-        #     report_path = generate_evaluation_report(project_dir,session,calib_file_path)
-        
 
