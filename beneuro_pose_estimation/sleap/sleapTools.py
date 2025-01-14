@@ -11,7 +11,8 @@ TBD:
 conda activate bnp
 cd repo_path
 
-python -m beneuro_pose_estimation.cli annotate --sessions session_name --cameras camera_name (to launch annotation GUI to annotate)
+python -m beneuro_pose_estimation.cli annotate --sessions session_name --cameras camera_name --pred (to launch annotation GUI to annotate; 
+(if --pred, predictions are run on the annotation videos using the current model so anotations can be made by correcting predictions)
 python -m beneuro_pose_estimation.cli predict-2D --sessions session_name --cameras camera_name (to get 2D predictions)
 python -m beneuro_pose_estimation.cli visualize-2D --sessions session_name --cameras camera_name (to launch annotation GUI to visualize predictions)
 python -m beneuro_pose_estimation.cli create-annotations --sessions session_name --cameras camera_name (to create annotation projects using frame selection pipeline without launching the GUI)
@@ -370,24 +371,21 @@ def annotate_videos(sessions, cameras = params.default_cameras, pred = False):
                         if not os.path.exists(model_dir):
                             logging.info(f"Model directory for {camera} does not exist, skipping.")
                             continue
-                        output_file = f"{project_path}.predictions.slp"
                         model_path = f"{model_dir}/training_config.json"
                         command = [
                         "sleap-track",
                         project_path,
                         "--video.index", "0",
                         "-m", model_path,
-                        "-o", output_file
+                        "-o", project_path
                         ]
                         logging.info(f"Running sleap-track on annotation video")
                         # Run the sleap-track command using subprocess
                         subprocess.run(command, check=True)
                         logging.info(f"Tracking completed\n")
-                        logging.info(f"Launching annotation GUI...")
-                        subprocess.run(["sleap-label", output_file])
-                    else:
-                        logging.info(f"Launching annotation GUI...")
-                        subprocess.run(["sleap-label", project_path]) # first test if the project is created
+
+                    logging.info(f"Launching annotation GUI...")
+                    subprocess.run(["sleap-label", project_path]) # first test if the project is created
                 except Exception as e:
                     logging.error(f"Failed to process camera {camera} for session {session}: {e}")
         except Exception as e:
@@ -406,18 +404,13 @@ def create_training_file(camera, sessions):
         try:
             # Define path to the session-specific .slp file
             session_slp_path = f"{params.slp_annotations_dir}/{session}_annotations/{session}_{camera}_annotations/{session}_{camera}.slp"
-            if os.path.exists(f"{session_slp_path}.predictions.slp"):
-                session_labels = sleap.load_file(f"{session_slp_path}.predictions.slp")
-                session_labeled_frames = session_labels.labeled_frames
-                all_labeled_frames.extend(session_labeled_frames)
-                logging.info(f"Added {len(session_labeled_frames)} frames from session {session} for camera {camera}.")
-            # Check if the .slp file exists for the session
+            # # Check if the .slp file exists for the session
             if os.path.exists(f"{session_slp_path}"):
                 session_labels = sleap.load_file(session_slp_path)
                 session_labeled_frames = session_labels.labeled_frames
                 all_labeled_frames.extend(session_labeled_frames)
                 logging.info(f"Added {len(session_labeled_frames)} frames from session {session} for camera {camera}.")
-            if not os.path.exists(f"{session_slp_path}.predictions.slp") and not os.path.exists(f"{session_slp_path}"):
+            else:
                 logging.info(f"SLP annotation project for {session}, {camera} does not exist. Skipping.")
                 continue
         except Exception as e:
