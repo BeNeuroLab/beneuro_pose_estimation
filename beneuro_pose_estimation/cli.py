@@ -2,7 +2,7 @@
 import argparse
 from beneuro_pose_estimation import set_logging
 from beneuro_pose_estimation.sleap.sleapTools import (
-    annotate_video,
+    annotate_videos,
     create_annotation_projects,
     get_2Dpredictions,
     train_models,
@@ -26,7 +26,11 @@ def main():
     annotate_parser = subparsers.add_parser("annotate", help="Annotate video frames for SLEAP")
     annotate_parser.add_argument("--sessions", nargs="+", required=True, help="List of sessions to annotate")
     annotate_parser.add_argument("--cameras", nargs="*", help="List of cameras to annotate")
-
+    annotate_parser.add_argument(
+    "--pred",
+    action="store_true",
+    help="Run predictions before annotating using an existing model"
+    )   
     # Subcommand: Create annotation projects
     annotation_parser = subparsers.add_parser("create-annotations", help="Create annotation projects for SLEAP")
     annotation_parser.add_argument("--sessions", nargs="+", required=True, help="List of sessions for annotation projects")
@@ -61,7 +65,7 @@ def main():
 
     # Dispatch to the appropriate function
     if args.command == "annotate":
-        annotate_video(sessions=args.sessions, cameras=args.cameras)
+        annotate_videos(sessions=args.sessions, cameras=args.cameras,pred = args.pred)
     elif args.command == "create-annotations":
         create_annotation_projects(sessions=args.sessions, cameras=args.cameras)
     elif args.command == "pose-estimation":
