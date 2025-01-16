@@ -6,8 +6,7 @@ from pathlib import Path
 
 from rich.logging import RichHandler
 
-
-def set_logging(file_path: str | None = None, overwrite: bool = True) -> None:
+def set_logging(file_path = None, overwrite = True):
     frmt = '%(asctime)s - %(levelname)s - %(message)s'
 
     if file_path is not None:

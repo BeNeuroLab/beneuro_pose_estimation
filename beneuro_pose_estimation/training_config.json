@@ -1,0 +1,1045 @@
+{
+    "data": {
+        "labels": {
+            "training_labels": "E:/complete-projects/projects/h1_new_setup/Camera_Back_Right.slp",
+            "validation_labels": null,
+            "validation_fraction": 0.1,
+            "test_labels": null,
+            "split_by_inds": false,
+            "training_inds": [
+                319,
+                204,
+                302,
+                137,
+                41,
+                287,
+                131,
+                291,
+                84,
+                96,
+                205,
+                153,
+                159,
+                126,
+                359,
+                235,
+                353,
+                118,
+                76,
+                262,
+                216,
+                323,
+                274,
+                43,
+                112,
+                134,
+                155,
+                334,
+                196,
+                288,
+                48,
+                210,
+                121,
+                157,
+                212,
+                139,
+                298,
+                28,
+                29,
+                358,
+                270,
+                103,
+                295,
+                245,
+                256,
+                55,
+                181,
+                217,
+                253,
+                86,
+                32,
+                339,
+                350,
+                309,
+                367,
+                383,
+                220,
+                7,
+                246,
+                195,
+                269,
+                234,
+                380,
+                265,
+                128,
+                124,
+                222,
+                224,
+                14,
+                199,
+                98,
+                214,
+                241,
+                276,
+                236,
+                292,
+                381,
+                123,
+                108,
+                317,
+                73,
+                201,
+                324,
+                46,
+                364,
+                70,
+                209,
+                315,
+                284,
+                305,
+                320,
+                2,
+                372,
+                22,
+                39,
+                338,
+                250,
+                271,
+                219,
+                53,
+                180,
+                160,
+                33,
+                13,
+                331,
+                313,
+                78,
+                198,
+                371,
+                322,
+                11,
+                186,
+                354,
+                61,
+                200,
+                382,
+                215,
+                225,
+                360,
+                260,
+                355,
+                312,
+                37,
+                232,
+                111,
+                94,
+                130,
+                278,
+                57,
+                321,
+                259,
+                38,
+                361,
+                248,
+                79,
+                279,
+                17,
+                340,
+                247,
+                72,
+                336,
+                297,
+                182,
+                129,
+                65,
+                304,
+                263,
+                261,
+                258,
+                172,
+                244,
+                56,
+                289,
+                171,
+                125,
+                190,
+                81,
+                107,
+                146,
+                347,
+                102,
+                280,
+                368,
+                116,
+                173,
+                138,
+                8,
+                83,
+                36,
+                3,
+                375,
+                133,
+                194,
+                187,
+                208,
+                174,
+                314,
+                9,
+                213,
+                68,
+                127,
+                344,
+                369,
+                385,
+                105,
+                387,
+                50,
+                311,
+                30,
+                193,
+                77,
+                52,
+                333,
+                156,
+                62,
+                45,
+                154,
+                27,
+                63,
+                223,
+                239,
+                272,
+                80,
+                285,
+                51,
+                356,
+                88,
+                326,
+                273,
+                18,
+                59,
+                226,
+                143,
+                47,
+                5,
+                1,
+                228,
+                170,
+                203,
+                12,
+                60,
+                175,
+                114,
+                363,
+                230,
+                0,
+                352,
+                31,
+                40,
+                379,
+                233,
+                10,
+                388,
+                197,
+                23,
+                106,
+                191,
+                329,
+                113,
+                202,
+                34,
+                147,
+                378,
+                301,
+                227,
+                299,
+                90,
+                144,
+                20,
+                26,
+                110,
+                24,
+                67,
+                389,
+                346,
+                343,
+                325,
+                370,
+                164,
+                316,
+                238,
+                308,
+                207,
+                19,
+                188,
+                149,
+                249,
+                366,
+                161,
+                25,
+                91,
+                152,
+                348,
+                82,
+                163,
+                35,
+                66,
+                281,
+                54,
+                377,
+                318,
+                119,
+                255,
+                74,
+                178,
+                277,
+                189,
+                179,
+                290,
+                294,
+                21,
+                109,
+                16,
+                365,
+                85,
+                267,
+                4,
+                251,
+                286,
+                89,
+                373,
+                115,
+                135,
+                376,
+                330,
+                328,
+                99,
+                257,
+                341,
+                151,
+                71,
+                184,
+                254,
+                140,
+                192,
+                266,
+                349,
+                307,
+                177,
+                150,
+                384,
+                136,
+                166,
+                327,
+                342,
+                345,
+                100,
+                117,
+                145,
+                69,
+                206,
+                293,
+                390,
+                282,
+                97,
+                95,
+                221,
+                357,
+                185,
+                335,
+                275,
+                310,
+                93,
+                268,
+                231,
+                362,
+                167,
+                141,
+                283,
+                243,
+                300,
+                242
+            ],
+            "validation_inds": [
+                104,
+                6,
+                337,
+                64,
+                168,
+                176,
+                264,
+                148,
+                237,
+                296,
+                15,
+                169,
+                122,
+                120,
+                158,
+                162,
+                240,
+                386,
+                374,
+                44,
+                58,
+                132,
+                87,
+                101,
+                92,
+                351,
+                49,
+                142,
+                229,
+                75,
+                252,
+                211,
+                303,
+                165,
+                306,
+                42,
+                183,
+                332,
+                218
+            ],
+            "test_inds": null,
+            "search_path_hints": [
+                ""
+            ],
+            "skeletons": [
+                {
+                    "directed": true,
+                    "graph": {
+                        "name": "Skeleton-1",
+                        "num_edges_inserted": 20
+                    },
+                    "links": [
+                        {
+                            "edge_insert_idx": 0,
+                            "key": 0,
+                            "source": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "shoulder_center",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_shoulder",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/reduce": [
+                                    {
+                                        "py/type": "sleap.skeleton.EdgeType"
+                                    },
+                                    {
+                                        "py/tuple": [
+                                            1
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 1,
+                            "key": 0,
+                            "source": {
+                                "py/id": 1
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_shoulder",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 6,
+                            "key": 0,
+                            "source": {
+                                "py/id": 1
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "hip_center",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 2,
+                            "key": 0,
+                            "source": {
+                                "py/id": 2
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_elbow",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 4,
+                            "key": 0,
+                            "source": {
+                                "py/id": 4
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_elbow",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 17,
+                            "key": 0,
+                            "source": {
+                                "py/id": 7
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_wrist",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 7,
+                            "key": 0,
+                            "source": {
+                                "py/id": 5
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_knee",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 10,
+                            "key": 0,
+                            "source": {
+                                "py/id": 5
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_knee",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 13,
+                            "key": 0,
+                            "source": {
+                                "py/id": 5
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "tail_base",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 8,
+                            "key": 0,
+                            "source": {
+                                "py/id": 9
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_ankle",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 9,
+                            "key": 0,
+                            "source": {
+                                "py/id": 12
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_foot",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 11,
+                            "key": 0,
+                            "source": {
+                                "py/id": 10
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_ankle",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 12,
+                            "key": 0,
+                            "source": {
+                                "py/id": 14
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_foot",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 14,
+                            "key": 0,
+                            "source": {
+                                "py/id": 11
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "tail_middle",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 15,
+                            "key": 0,
+                            "source": {
+                                "py/id": 16
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "tail_tip",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 16,
+                            "key": 0,
+                            "source": {
+                                "py/id": 6
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_wrist",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 19,
+                            "key": 0,
+                            "source": {
+                                "py/id": 18
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "left_paw",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        },
+                        {
+                            "edge_insert_idx": 18,
+                            "key": 0,
+                            "source": {
+                                "py/id": 8
+                            },
+                            "target": {
+                                "py/object": "sleap.skeleton.Node",
+                                "py/state": {
+                                    "py/tuple": [
+                                        "right_paw",
+                                        1.0
+                                    ]
+                                }
+                            },
+                            "type": {
+                                "py/id": 3
+                            }
+                        }
+                    ],
+                    "multigraph": true,
+                    "nodes": [
+                        {
+                            "id": {
+                                "py/id": 1
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 2
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 19
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 4
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 7
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 20
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 5
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 9
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 12
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 13
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 10
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 14
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 15
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 11
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 16
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 17
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 6
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 18
+                            }
+                        },
+                        {
+                            "id": {
+                                "py/id": 8
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "preprocessing": {
+            "ensure_rgb": false,
+            "ensure_grayscale": true,
+            "imagenet_mode": null,
+            "input_scaling": 0.8,
+            "pad_to_stride": 64,
+            "resize_and_pad_to_target": true,
+            "target_height": 720,
+            "target_width": 1280
+        },
+        "instance_cropping": {
+            "center_on_part": null,
+            "crop_size": null,
+            "crop_size_detection_padding": 16
+        }
+    },
+    "model": {
+        "backbone": {
+            "leap": null,
+            "unet": {
+                "stem_stride": null,
+                "max_stride": 64,
+                "output_stride": 4,
+                "filters": 32,
+                "filters_rate": 1.5,
+                "middle_block": true,
+                "up_interpolate": true,
+                "stacks": 1
+            },
+            "hourglass": null,
+            "resnet": null,
+            "pretrained_encoder": null
+        },
+        "heads": {
+            "single_instance": {
+                "part_names": [
+                    "shoulder_center",
+                    "left_shoulder",
+                    "left_paw",
+                    "right_shoulder",
+                    "right_elbow",
+                    "right_paw",
+                    "hip_center",
+                    "left_knee",
+                    "left_ankle",
+                    "left_foot",
+                    "right_knee",
+                    "right_ankle",
+                    "right_foot",
+                    "tail_base",
+                    "tail_middle",
+                    "tail_tip",
+                    "left_elbow",
+                    "left_wrist",
+                    "right_wrist"
+                ],
+                "sigma": 5.0,
+                "output_stride": 4,
+                "loss_weight": 1.0,
+                "offset_refinement": false
+            },
+            "centroid": null,
+            "centered_instance": null,
+            "multi_instance": null,
+            "multi_class_bottomup": null,
+            "multi_class_topdown": null
+        },
+        "base_checkpoint": null
+    },
+    "optimization": {
+        "preload_data": true,
+        "augmentation_config": {
+            "rotate": true,
+            "rotation_min_angle": -15.0,
+            "rotation_max_angle": 15.0,
+            "translate": false,
+            "translate_min": -5,
+            "translate_max": 5,
+            "scale": true,
+            "scale_min": 0.9,
+            "scale_max": 1.1,
+            "uniform_noise": false,
+            "uniform_noise_min_val": 0.0,
+            "uniform_noise_max_val": 10.0,
+            "gaussian_noise": true,
+            "gaussian_noise_mean": 5.0,
+            "gaussian_noise_stddev": 1.0,
+            "contrast": true,
+            "contrast_min_gamma": 0.5,
+            "contrast_max_gamma": 2.0,
+            "brightness": true,
+            "brightness_min_val": 0.0,
+            "brightness_max_val": 10.0,
+            "random_crop": false,
+            "random_crop_height": 256,
+            "random_crop_width": 256,
+            "random_flip": true,
+            "flip_horizontal": false
+        },
+        "online_shuffling": true,
+        "shuffle_buffer_size": 128,
+        "prefetch": true,
+        "batch_size": 4,
+        "batches_per_epoch": 200,
+        "min_batches_per_epoch": 200,
+        "val_batches_per_epoch": 10,
+        "min_val_batches_per_epoch": 10,
+        "epochs": 200,
+        "optimizer": "adam",
+        "initial_learning_rate": 0.0001,
+        "learning_rate_schedule": {
+            "reduce_on_plateau": true,
+            "reduction_factor": 0.5,
+            "plateau_min_delta": 1e-06,
+            "plateau_patience": 5,
+            "plateau_cooldown": 3,
+            "min_learning_rate": 1e-08
+        },
+        "hard_keypoint_mining": {
+            "online_mining": false,
+            "hard_to_easy_ratio": 2.0,
+            "min_hard_keypoints": 2,
+            "max_hard_keypoints": null,
+            "loss_scale": 5.0
+        },
+        "early_stopping": {
+            "stop_training_on_plateau": true,
+            "plateau_min_delta": 1e-08,
+            "plateau_patience": 10
+        }
+    },
+    "outputs": {
+        "save_outputs": true,
+        "run_name": "240521_200618.single_instance.n=391",
+        "run_name_prefix": "Camera_Back_Right_h1_newsetup",
+        "run_name_suffix": "",
+        "runs_folder": "E:/complete-projects/projects/h1_new_setup\\models",
+        "tags": [
+            ""
+        ],
+        "save_visualizations": true,
+        "delete_viz_images": true,
+        "zip_outputs": false,
+        "log_to_csv": true,
+        "checkpointing": {
+            "initial_model": false,
+            "best_model": true,
+            "every_epoch": false,
+            "latest_model": false,
+            "final_model": false
+        },
+        "tensorboard": {
+            "write_logs": false,
+            "loss_frequency": "epoch",
+            "architecture_graph": false,
+            "profile_graph": false,
+            "visualizations": true
+        },
+        "zmq": {
+            "subscribe_to_controller": true,
+            "controller_address": "tcp://127.0.0.1:9000",
+            "controller_polling_timeout": 10,
+            "publish_updates": true,
+            "publish_address": "tcp://127.0.0.1:9001"
+        }
+    },
+    "name": "",
+    "description": "",
+    "sleap_version": "1.3.3",
+    "filename": "E:/complete-projects/projects/h1_new_setup\\models\\Camera_Back_Right_h1_newsetup240521_200618.single_instance.n=391\\training_config.json"
+}
