@@ -1,13 +1,15 @@
 """
 Initialize macro variables and functions
 """
+
 import logging
 from pathlib import Path
 
 from rich.logging import RichHandler
 
-def set_logging(file_path = None, overwrite = True):
-    frmt = '%(asctime)s - %(levelname)s - %(message)s'
+
+def set_logging(file_path=None, overwrite=True):
+    frmt = "%(asctime)s - %(levelname)s - %(message)s"
 
     if file_path is not None:
         file_path = Path(file_path)
@@ -17,11 +19,12 @@ def set_logging(file_path = None, overwrite = True):
             filename=file_path,
             level=logging.INFO,
             format=frmt,
-            datefmt='%Y-%m-%d %H:%M:%S'
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
     else:
         logging.basicConfig(
             handlers=[RichHandler(level="NOTSET")],
             level=logging.INFO,
-            format=frmt, datefmt='%Y-%m-%d %H:%M:%S'
+            format=frmt,
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
