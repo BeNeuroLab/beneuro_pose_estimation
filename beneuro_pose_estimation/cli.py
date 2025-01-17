@@ -2,16 +2,25 @@ from pathlib import Path
 
 import typer
 
-from beneuro_pose_estimation import _get_env_path
 from beneuro_pose_estimation.config import _check_config, _get_package_path, \
-    _check_is_git_track, _check_root
+    _check_is_git_track, _check_root, _get_env_path
+from beneuro_pose_estimation.sleap.sleapTools import annotate_videos
 
 # Create a Typer app
 app = typer.Typer()
 
 # ================================== Functionality =========================================
 
-def annotate_videos():
+def annotate(
+    session_name: str = typer.Argument(..., help="The first number.")
+    camera: str,
+    pred: bool
+):
+    annotate_videos(
+        sessions=session_name,
+        cameras=camera,
+        pred=pred)
+
     return
 
 def create_annotation_project():
@@ -84,3 +93,6 @@ def init():
 
         print("[green]Config file created successfully.")
 
+# Main Entry Point
+if __name__ == "__main__":
+    app()

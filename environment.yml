@@ -1,0 +1,16 @@
+name: bnp
+channels:
+  - conda-forge
+  - nvidia
+  - sleap
+  - anaconda
+dependencies:
+  - sleap
+  - matplotlib
+  - numpy
+  - pandas
+  - seaborn
+  - typer
+  - rich
+  - pip
+

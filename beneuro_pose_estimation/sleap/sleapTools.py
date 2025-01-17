@@ -35,12 +35,8 @@ import logging
 import os
 import subprocess
 
-from beneuro_pose_estimation import params
+from beneuro_pose_estimation import params, set_logging
 
-if not logging.getLogger().hasHandlers():
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
 import json
 
 import cv2
@@ -52,8 +48,7 @@ import sleap
 from sleap import Instance, LabeledFrame, Labels, Skeleton, Video
 from sleap.io.video import Video
 
-# import argparse
-
+logger = set_logging(__name__)
 
 def compare_models(models_folder, test_gt_path=None):
     """
