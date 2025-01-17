@@ -19,25 +19,20 @@ environment and separate from `bnd`.
    # Miniconda
    $ curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe -o miniconda.exe; Start-Process -FilePath ".\miniconda.exe" -ArgumentList "/S" -Wait; del miniconda.exe
    ```
-
+3. Clone repo and navigate to folder:
+   ```shell
+   git clone git@github.com:BeNeuroLab/beneuro_pose_estimation.git
+   cd ./beneuro_pose_estimation
+   ```
 3. Creating the conda environment
   
-    This seems to be working:
+    Open miniconda or miniforge prompt:
       ```shell
-      # Create the environment called bnp and install sleap
-      $ conda create -y -n bnp -c conda-forge -c nvidia -c sleap -c anaconda sleap
-      $ conda activate bnp
+      # Install bash in base environment
+      conda install -c conda-forge m2-base
    
-      # Remove opencv pypi version because it conflicts with sleap-anipose and anipose
-      $ pip uninstall -y opencv-python-headless 
-   
-      # Install required version
-      $ pip install "opencv-contrib-python<4.7.0" 
-   
-      # Install sleap anipose and anipose version 1.0 because we cannot use 1.1
-      $ pip install sleap_anipose
-      $ pip install "anipose<1.1" 
-      $ pip install --upgrade apptools
+      # Run the environment creation script
+      bash setup_env.sh
       ```
    
    The key package versions are:

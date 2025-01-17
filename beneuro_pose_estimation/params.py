@@ -6,23 +6,21 @@ from sleap.info.feature_suggestions import (
 ############### CONFIGURATIONS
 ######### PATHS
 
-repo_dir = "/home/il620/beneuro_pose_estimation"
-recordings_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw"
+repo_dir = r"C:\repos-windows\beneuro_pose_estimation"
+recordings_dir = r"Z:\live\raw"
 # file format: "M043/M043_2024_10_23_11_15/M043_2024_10_23_11_15_cameras/M043_2024_10_23_11_15_camera_1.avi"
 projects_dir = "/home/il620/beneuro_pose_estimation/projects"  # ?
 
 ## SLEAP paths
-slp_annotations_dir = "/home/il620/beneuro_pose_estimation/projects/annotations"
-slp_training_dir = "/home/il620/beneuro_pose_estimation/projects/training"
-predictions_dir = "/home/il620/beneuro_pose_estimation/projects/predictions"  # 2D
-slp_models_dir = "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/models/h1_new_setup"  # will change this
-slp_training_config_path = (
-    "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/models/h1_new_setup"
-)
+slp_annotations_dir = r"C:\repos-windows\beneuro_pose_estimation\projects\annotations"
+slp_training_dir = r"C:\repos-windows\beneuro_pose_estimation\projects\training"
+predictions_dir = r"C:\repos-windows\beneuro_pose_estimation\projects\predictions"  # 2D
+slp_models_dir = r"Z:\live\raw\pose-estimation\models\h1_new_setup"  # will change this
+slp_training_config_path = r"Z:\live\raw\pose-estimation\models\h1_new_setup"
 
-skeleton_path = f"{repo_dir}/beneuro_pose_estimation/sleap/skeleton.json"
+skeleton_path = rf"{repo_dir}\beneuro_pose_estimation\sleap\skeleton.json"
 predicition_eval_dir = (
-    "/home/il620/beneuro_pose_estimation/projects/predictions/evaluation"
+    r"C:\repos-windows\beneuro_pose_estimation\projects\predictions\evaluation"
 )
 
 # input_2Dpred = slp_annotations_dir # can be recordings_dir or projects_dir or slp_annotations_dir
@@ -30,13 +28,13 @@ input_2Dpred = recordings_dir
 
 ## Anipose paths
 # path to 3D pose estimation directory
-complete_projects_dir = "/home/il620/beneuro_pose_estimation/projects/complete_projects"
-# path to calibration videos directory
-calib_vid_dir = (
-    "/mnt/rds/bb2020/projects/beneuro/live/raw/pose-estimation/calibration-videos"  # ?
+complete_projects_dir = (
+    r"C:\repos-windows\beneuro_pose_estimation\projects\complete_projects"
 )
+# path to calibration videos directory
+calib_vid_dir = r"Z:\live\raw\pose-estimation\calibration-videos"  # ?
 # path to the calibration output file directory
-calibration_dir = f"{projects_dir}/calibrations"
+calibration_dir = f"{projects_dir}\calibrations"
 
 
 #### CAMERAS
