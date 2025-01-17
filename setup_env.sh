@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Automatically exit if a command fails
-set -e
+# Python
+conda create -y -n bnp python=3.7
 
 # Create Conda environment with required channels and packages
-conda create -y -n bnp -c conda-forge -c nvidia -c sleap -c anaconda sleap typer rich
-
-# Conda init
-conda init
+conda create -y -n bnp -c conda-forge -c nvidia -c sleap -c anaconda sleap
 
 # Activate the Conda environment
 conda activate bnp
+
+# Extra packages
+conda install -y matplotlib numpy pandas seaborn typer rich pip
 
 # Remove opencv pypi version to avoid conflicts
 pip uninstall -y opencv-python-headless

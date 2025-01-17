@@ -2,6 +2,7 @@ from pathlib import Path
 
 import typer
 
+from beneuro_pose_estimation import params
 from beneuro_pose_estimation.config import _check_config, _get_package_path, \
     _check_is_git_track, _check_root, _get_env_path
 from beneuro_pose_estimation.sleap.sleapTools import annotate_videos
@@ -12,9 +13,9 @@ app = typer.Typer()
 # ================================== Functionality =========================================
 
 def annotate(
-    session_name: str = typer.Argument(..., help="The first number.")
-    camera: str,
-    pred: bool
+    session_name: str = typer.Argument(..., help="Session name to annotate"),
+    camera: str = typer.Argument(..., help=f"Camera name to annotate. Must be part of {params.default_cameras}"),
+    pred: bool = typer.Option(True, "--pred/--no-pred", help="Run annotation on prediction or not.", ),
 ):
     annotate_videos(
         sessions=session_name,
