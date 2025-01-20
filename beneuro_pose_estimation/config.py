@@ -5,7 +5,7 @@ Initialize macro variables and functions
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-
+from rich import print
 from rich.logging import RichHandler
 
 def _get_package_path() -> Path:
@@ -17,7 +17,7 @@ def _get_package_path() -> Path:
 
 def _get_env_path() -> Path:
     """
-    Returns the path to the .env file containing the configuration settings.
+    Returns the path to the .old_env_file file containing the configuration settings.
     """
     package_path = _get_package_path()
     return package_path / ".env"
@@ -78,32 +78,9 @@ class Config:
 
 def _load_config() -> Config:
     """
-    Loads the configuration settings from the .env file and returns it as a Config object.
+    Loads the configuration settings from the .old_env_file file and returns it as a Config object.
     """
     if not _get_env_path().exists():
         raise FileNotFoundError("Config file not found. Run `bnp init` to create one.")
 
     return Config()
-
-
-
-def set_logging(file_path=None, overwrite=True):
-    frmt = "%(asctime)s - %(levelname)s - %(message)s"
-
-    if file_path is not None:
-        file_path = Path(file_path)
-        if overwrite is True and file_path.exists() is True:
-            file_path.unlink()
-        logging.basicConfig(
-            filename=file_path,
-            level=logging.INFO,
-            format=frmt,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-    else:
-        logging.basicConfig(
-            handlers=[RichHandler(level="NOTSET")],
-            level=logging.INFO,
-            format=frmt,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )

@@ -1,10 +1,12 @@
 import subprocess
 from pathlib import Path
 
+from typing import List
+
 from beneuro_pose_estimation.config import _load_config
 
 
-def _run_git_command(repo_path: Path, command: list[str]) -> str:
+def _run_git_command(repo_path: Path, command: List[str]) -> str:
     """
     Run a git command in the specified repository and return its output
 
@@ -21,7 +23,6 @@ def _run_git_command(repo_path: Path, command: list[str]) -> str:
     The output of the git command as a string.
     """
     repo_path = Path(repo_path)
-
     if not repo_path.is_absolute():
         raise ValueError(f"{repo_path} is not an absolute path")
 
@@ -29,7 +30,7 @@ def _run_git_command(repo_path: Path, command: list[str]) -> str:
         raise ValueError(f"{repo_path} is not a git repository")
 
     result = subprocess.run(
-        ["git", "-C", repo_path.absolute()] + command, capture_output=True, text=True
+        ["git", "-C", str(repo_path.absolute())] + command, capture_output=True, text=True
     )
     if result.returncode != 0:
         raise Exception(f"Git command failed: {result.stderr}")
@@ -37,7 +38,7 @@ def _run_git_command(repo_path: Path, command: list[str]) -> str:
     return result.stdout.strip()
 
 
-def _get_new_commits(repo_path: Path) -> list[str]:
+def _get_new_commits(repo_path: Path) -> List[str]:
     """
     Check for new commits from origin/main of the specified repository.
 
@@ -83,34 +84,34 @@ def check_for_updates() -> bool:
 
     print("No new commits found, package is up to date.")
 
-    def update_bnd(print_new_commits: bool = True) -> None:
-        """
-        Update bnd if it was installed with conda
+def update_bnp(print_new_commits: bool = True) -> None:
+    """
+    Update bnd if it was installed with conda
 
-        Parameters
-        ----------
-        install_method
-        print_new_commits
+    Parameters
+    ----------
+    install_method
+    print_new_commits
 
-        """
-        config = _load_config()
+    """
+    config = _load_config()
 
-        new_commits = _get_new_commits(config.REPO_PATH)
+    new_commits = _get_new_commits(config.REPO_PATH)
 
-        if len(new_commits) > 0:
-            print("New commits found, pulling changes...")
+    if len(new_commits) > 0:
+        print("New commits found, pulling changes...")
 
-            print(1 * "\n")
+        print(1 * "\n")
 
-            _run_git_command(config.REPO_PATH, ["pull", "origin", "main"])
+        _run_git_command(config.REPO_PATH, ["pull", "origin", "main"])
 
-            print(1 * "\n")
-            print("Package updated successfully.")
-            print("\n")
+        print(1 * "\n")
+        print("Package updated successfully.")
+        print("\n")
 
-            if print_new_commits:
-                print("New commits:")
-                for commit in new_commits:
-                    print(f" - {commit}")
-        else:
-            print("Package appears to be up to date, no new commits found.")
+        if print_new_commits:
+            print("New commits:")
+            for commit in new_commits:
+                print(f" - {commit}")
+    else:
+        print("Package appears to be up to date, no new commits found.")

@@ -24,23 +24,37 @@ environment and separate from `bnd`.
    git clone git@github.com:BeNeuroLab/beneuro_pose_estimation.git
    cd ./beneuro_pose_estimation
    ```
-3. Creating the conda environment
-  
-    Open miniconda or miniforge prompt:
-      ```shell
-      # Install bash in base environment
-      conda install -c conda-forge m2-base
-   
-      # Run the environment creation script
-      bash setup_env.sh
-      ```
-   
-   The key package versions are:
-      ```text
-      # Name                    Version                   Build  Channel
-      anipose                   1.0.1                    pypi_0    pypi
-      aniposelib                0.5.1                    pypi_0    pypi
-      sleap-anipose             0.1.8                    pypi_0    pypi
-      opencv-contrib-python     4.6.0.66                 pypi_0    pypi
-      opencv-python             4.10.0.84                pypi_0    pypi
-      ```
+4. Creating the conda environment
+ 
+```shell
+conda create -y -n bnp -c conda-forge -c nvidia -c sleap/label/dev -c sleap -c anaconda sleap=1.4.1
+
+# Activate the Conda environment
+conda activate bnp
+
+# Remove opencv pypi version to avoid conflicts
+pip uninstall -y opencv-python-headless
+
+# Install the required version of OpenCV
+pip install "opencv-contrib-python<4.7.0"
+
+# Install sleap_anipose and the required version of anipose
+pip install sleap_anipose
+pip install "anipose<1.1"
+
+# Upgrade apptools to the latest version
+pip install --upgrade apptools
+
+# Install package in editable form
+pip install -e .\  # Windows
+```
+
+The key package versions are:
+```text
+# Name                    Version                   Build  Channel
+anipose                   1.0.1                    pypi_0    pypi
+aniposelib                0.5.1                    pypi_0    pypi
+sleap-anipose             0.1.8                    pypi_0    pypi
+opencv-contrib-python     4.6.0.66                 pypi_0    pypi
+opencv-python             4.10.0.84                pypi_0    pypi
+```

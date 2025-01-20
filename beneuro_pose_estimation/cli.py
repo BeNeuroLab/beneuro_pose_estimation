@@ -2,13 +2,18 @@ from pathlib import Path
 
 import typer
 
+from rich import print
+
 from beneuro_pose_estimation import params
 from beneuro_pose_estimation.config import _check_config, _get_package_path, \
     _check_is_git_track, _check_root, _get_env_path
 from beneuro_pose_estimation.sleap.sleapTools import annotate_videos
+from beneuro_pose_estimation.update_bnp import check_for_updates, update_bnp
 
 # Create a Typer app
-app = typer.Typer()
+app = typer.Typer(
+    add_completion=False,  # Disable the auto-completion options
+)
 
 # ================================== Functionality =========================================
 
@@ -49,14 +54,14 @@ def self_update():
     """
     Update the bnd tool by pulling the latest commits from the repo's main branch.
     """
-    update_bnd()
+    update_bnp()
 
 # ================================= Initialiation ==========================================
 
 @app.command()
 def init():
     """
-    Create a .env file to store the paths to the local and remote data storage.
+    Create a .old_env_file file to store the paths to the local and remote data storage.
     """
 
     # check if the file exists
@@ -92,7 +97,8 @@ def init():
         # make sure that it works
         _check_config()
 
-        print("[green]Config file created successfully.")
+        print("\n[green]Config file created successfully.\n")
+
 
 # Main Entry Point
 if __name__ == "__main__":
