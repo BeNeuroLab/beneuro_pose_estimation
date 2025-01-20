@@ -2,11 +2,8 @@
 Initialize macro variables and functions
 """
 
-import logging
-from dataclasses import dataclass
 from pathlib import Path
 from rich import print
-from rich.logging import RichHandler
 
 
 def _get_package_path() -> Path:

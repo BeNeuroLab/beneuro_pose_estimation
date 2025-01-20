@@ -4,7 +4,7 @@ import typer
 
 from rich import print
 
-from beneuro_pose_estimation import params
+from beneuro_pose_estimation import params, set_logging
 from beneuro_pose_estimation.config import _check_config, _get_package_path, \
     _check_is_git_track, _check_root, _get_env_path
 from beneuro_pose_estimation.sleap.sleapTools import annotate_videos
@@ -14,6 +14,8 @@ from beneuro_pose_estimation.update_bnp import check_for_updates, update_bnp
 app = typer.Typer(
     add_completion=False,  # Disable the auto-completion options
 )
+
+logger = set_logging(__name__)
 
 # ================================== Functionality =========================================
 
@@ -51,6 +53,8 @@ def check_updates():
     """
     Check if there are any new commits on the repo's main branch.
     """
+    logger.info('test_message')
+
     check_for_updates()
 
 

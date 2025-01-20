@@ -3,8 +3,10 @@ from pathlib import Path
 
 from typing import List
 
+from beneuro_pose_estimation import set_logging
 from beneuro_pose_estimation.config import _load_config
 
+logger = set_logging(__name__)
 
 def _run_git_command(repo_path: Path, command: List[str]) -> str:
     """
