@@ -17,11 +17,16 @@ app = typer.Typer(
 
 # ================================== Functionality =========================================
 
+
+@app.command()
 def annotate(
     session_name: str = typer.Argument(..., help="Session name to annotate"),
     camera: str = typer.Argument(..., help=f"Camera name to annotate. Must be part of {params.default_cameras}"),
     pred: bool = typer.Option(True, "--pred/--no-pred", help="Run annotation on prediction or not.", ),
 ):
+    """
+    Annotate sleap project
+    """
     annotate_videos(
         sessions=session_name,
         cameras=camera,
@@ -56,12 +61,12 @@ def self_update():
     """
     update_bnp()
 
-# ================================= Initialiation ==========================================
+# ================================= Initialization =========================================
 
 @app.command()
 def init():
     """
-    Create a .old_env_file file to store the paths to the local and remote data storage.
+    Create a .env file to store the paths to the local and remote data storage.
     """
 
     # check if the file exists

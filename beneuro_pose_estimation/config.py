@@ -8,6 +8,7 @@ from pathlib import Path
 from rich import print
 from rich.logging import RichHandler
 
+
 def _get_package_path() -> Path:
     """
     Returns the path to the package directory.
@@ -17,14 +18,16 @@ def _get_package_path() -> Path:
 
 def _get_env_path() -> Path:
     """
-    Returns the path to the .old_env_file file containing the configuration settings.
+    Returns the path to the .env file containing the configuration settings.
     """
     package_path = _get_package_path()
     return package_path / ".env"
 
+
 def _check_is_git_track(repo_path):
     folder = Path(repo_path)  # Convert to Path object
     assert (folder / ".git").is_dir()
+
 
 def _check_root(root_path: Path):
     assert root_path.exists(), f"{root_path} does not exist."
@@ -33,6 +36,7 @@ def _check_root(root_path: Path):
     files_in_root = [f.stem for f in root_path.iterdir()]
 
     assert "raw" in files_in_root, f"No raw folder in {root_path}"
+
 
 def _check_config():
     """
@@ -48,6 +52,7 @@ def _check_config():
     _check_root(config.REMOTE_PATH)
 
     print("[green]Config looks good.")
+
 
 class Config:
     """
@@ -78,7 +83,7 @@ class Config:
 
 def _load_config() -> Config:
     """
-    Loads the configuration settings from the .old_env_file file and returns it as a Config object.
+    Loads the configuration settings from the .env file and returns it as a Config object.
     """
     if not _get_env_path().exists():
         raise FileNotFoundError("Config file not found. Run `bnp init` to create one.")
