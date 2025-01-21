@@ -1,0 +1,14 @@
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.6.8
+  hooks:
+    # Run the linter.
+    - id: ruff
+      args: [--select, "E1,E4,F,I,W", --extend-ignore, "W5,W6,F841,W291", --fix, --line-length, "92"]
+      types:
+        - python
+    # Run the formatter.
+    - id: ruff-format
+      types:
+        - python

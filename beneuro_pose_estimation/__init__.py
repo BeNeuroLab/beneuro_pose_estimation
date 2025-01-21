@@ -1,27 +1,39 @@
-"""
-Initialize macro variables and functions
-"""
 import logging
-from pathlib import Path
+import warnings
 
-from rich.logging import RichHandler
 
-def set_logging(file_path = None, overwrite = True):
-    frmt = '%(asctime)s - %(levelname)s - %(message)s'
+# Create a logger for the package
+def set_logging(
+    file_name: str,
+) -> logging.Logger:
+    """
+    Set project-wide logging
 
-    if file_path is not None:
-        file_path = Path(file_path)
-        if overwrite is True and file_path.exists() is True:
-            file_path.unlink()
-        logging.basicConfig(
-            filename=file_path,
-            level=logging.INFO,
-            format=frmt,
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-    else:
-        logging.basicConfig(
-            handlers=[RichHandler(level="NOTSET")],
-            level=logging.INFO,
-            format=frmt, datefmt='%Y-%m-%d %H:%M:%S'
-        )
+    Parameters
+    ----------
+    file_name: str
+        Name of the module being logged
+
+    Returns
+    -------
+    logger: logging.Logger
+        logger object
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logging.captureWarnings(True)
+
+    logger = logging.getLogger(file_name)
+
+    def custom_warning_handler(
+        message, category, filename, lineno, file=None, line=None
+    ):
+        logger.warning(f"{category.__name__}: {message}")
+
+    # Set the custom handler
+    warnings.showwarning = custom_warning_handler
+
+    return logger

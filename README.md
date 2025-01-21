@@ -19,33 +19,42 @@ environment and separate from `bnd`.
    # Miniconda
    $ curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe -o miniconda.exe; Start-Process -FilePath ".\miniconda.exe" -ArgumentList "/S" -Wait; del miniconda.exe
    ```
+3. Clone repo and navigate to folder:
+   ```shell
+   git clone git@github.com:BeNeuroLab/beneuro_pose_estimation.git
+   cd ./beneuro_pose_estimation
+   ```
+4. Creating the conda environment
+ 
+```shell
+conda create -y -n bnp -c conda-forge -c nvidia -c sleap/label/dev -c sleap -c anaconda sleap=1.4.1
 
-3. Creating the conda environment
-  
-    This seems to be working:
-      ```shell
-      # Create the environment called bnp and install sleap
-      $ conda create -y -n bnp -c conda-forge -c nvidia -c sleap -c anaconda sleap
-      $ conda activate bnp
-   
-      # Remove opencv pypi version because it conflicts with sleap-anipose and anipose
-      $ pip uninstall -y opencv-python-headless 
-   
-      # Install required version
-      $ pip install "opencv-contrib-python<4.7.0" 
-   
-      # Install sleap anipose and anipose version 1.0 because we cannot use 1.1
-      $ pip install sleap_anipose
-      $ pip install "anipose<1.1" 
-      $ pip install --upgrade apptools
-      ```
-   
-   The key package versions are:
-      ```text
-      # Name                    Version                   Build  Channel
-      anipose                   1.0.1                    pypi_0    pypi
-      aniposelib                0.5.1                    pypi_0    pypi
-      sleap-anipose             0.1.8                    pypi_0    pypi
-      opencv-contrib-python     4.6.0.66                 pypi_0    pypi
-      opencv-python             4.10.0.84                pypi_0    pypi
-      ```
+# Activate the Conda environment
+conda activate bnp
+
+# Remove opencv pypi version to avoid conflicts
+pip uninstall -y opencv-python-headless
+
+# Install the required version of OpenCV
+pip install "opencv-contrib-python<4.7.0"
+
+# Install sleap_anipose and the required version of anipose
+pip install sleap_anipose
+pip install "anipose<1.1"
+
+# Upgrade apptools to the latest version
+pip install --upgrade apptools
+
+# Install package in editable form
+pip install -e .\  # Windows
+```
+
+The key package versions are:
+```text
+# Name                    Version                   Build  Channel
+anipose                   1.0.1                    pypi_0    pypi
+aniposelib                0.5.1                    pypi_0    pypi
+sleap-anipose             0.1.8                    pypi_0    pypi
+opencv-contrib-python     4.6.0.66                 pypi_0    pypi
+opencv-python             4.10.0.84                pypi_0    pypi
+```
