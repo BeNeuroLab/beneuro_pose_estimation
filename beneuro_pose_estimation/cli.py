@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import typer
-
+from typing import List, Optional
 from rich import print
 
 from beneuro_pose_estimation import params, set_logging
@@ -45,10 +45,10 @@ def pose():
 
 @app.command()
 def track_2d(
-    session_names: list[str] = typer.Argument(
+    session_names: List[str] = typer.Argument(
         ..., help="Session name(s) to annotate. Provide as a single session name or a list of session names."
     ),
-    cameras: list[str] = typer.Option(
+    cameras: List[str] = typer.Option(
         None, "--cameras", "-c", help=f"Camera name(s) to annotate. Provide as a single camera name or a list of camera names. Defaults to {params.default_cameras} if not specified."
     ),
 ):
