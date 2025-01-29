@@ -2,40 +2,10 @@ from aniposelib.boards import CharucoBoard
 from sleap.info.feature_suggestions import (
     FeatureSuggestionPipeline,
 )
+import cv2
+
 
 ############### CONFIGURATIONS
-######### PATHS
-
-repo_dir = r"C:\repos-windows\beneuro_pose_estimation"
-recordings_dir = r"Z:\live\raw"
-# file format: "M043/M043_2024_10_23_11_15/M043_2024_10_23_11_15_cameras/M043_2024_10_23_11_15_camera_1.avi"
-projects_dir = "/home/il620/beneuro_pose_estimation/projects"  # ?
-
-## SLEAP paths
-slp_annotations_dir = r"C:\repos-windows\beneuro_pose_estimation\projects\annotations"
-slp_training_dir = r"C:\repos-windows\beneuro_pose_estimation\projects\training"
-predictions_dir = r"C:\repos-windows\beneuro_pose_estimation\projects\predictions"  # 2D
-slp_models_dir = r"Z:\live\raw\pose-estimation\models\h1_new_setup"  # will change this
-slp_training_config_path = r"Z:\live\raw\pose-estimation\models\h1_new_setup"
-
-skeleton_path = rf"{repo_dir}\beneuro_pose_estimation\sleap\skeleton.json"
-predicition_eval_dir = (
-    r"C:\repos-windows\beneuro_pose_estimation\projects\predictions\evaluation"
-)
-
-# input_2Dpred = slp_annotations_dir # can be recordings_dir or projects_dir or slp_annotations_dir
-input_2Dpred = recordings_dir
-
-## Anipose paths
-# path to 3D pose estimation directory
-complete_projects_dir = (
-    r"C:\repos-windows\beneuro_pose_estimation\projects\complete_projects"
-)
-# path to calibration videos directory
-calib_vid_dir = r"Z:\live\raw\pose-estimation\calibration-videos"  # ?
-# path to the calibration output file directory
-calibration_dir = f"{projects_dir}\calibrations"
-
 
 #### CAMERAS
 default_cameras = [
@@ -60,26 +30,20 @@ camera_name_mapping = {
 
 #### SLEAP config
 
-## SLEAP annotation
-sessions_to_annotate = []
+## SLEAP annotation parameters
 frame_selection_pipeline = FeatureSuggestionPipeline(
     per_video=50,
     scale=0.25,
     sample_method="stride",
-    feature_type="hog",
+    feature_type="brisk",
     brisk_threshold=10,
     n_components=10,
     n_clusters=10,
     per_cluster=5,
 )
-## SLEAP training
 
-training_sessions = []
 
-## SLEAP 2D predictions
-sessions_to_predict = []
-
-# SLEAP tracking
+## SLEAP tracking
 frames_to_predict = None
 tracking_options = None
 
@@ -149,9 +113,12 @@ constraints = [
     [14, 15],
 ]
 
-board = CharucoBoard(
-    5, 4, square_length=10, marker_length=6, marker_bits=4, dict_size=250
-)
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+
+board = cv2.aruco.CharucoBoard((5, 4), 10, 6, aruco_dict)
+# board = CharucoBoard(
+#     5, 4, square_length=10, marker_length=6, marker_bits=4, dict_size=250
+# )
 fisheye = False
 
 
