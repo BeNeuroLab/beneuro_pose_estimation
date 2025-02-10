@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import sleap
-from sleap import Instance, LabeledFrame, Labels, Skeleton, Video
+from sleap import Instance, LabeledFrame, Labels, Skeleton, Video, load_file
 from sleap.io.video import Video
 from pathlib import Path
 from beneuro_pose_estimation.config import _load_config
@@ -231,18 +231,19 @@ def select_frames_to_annotate(
 
 
 def create_annotation_projects(
-    sessions, cameras=params.default_cameras
+    sessions, cameras=None, pred = False
 ):
     """
     create annotation projects for a list of sessions and cameras without launching GUI for annotation
     """
     if isinstance(sessions, str):
         sessions = [sessions]
+    cameras = cameras or params.default_cameras
     if isinstance(cameras, str):
         cameras = [cameras]
     for session in sessions:
         for camera in cameras:
-            create_annotation_project(session, camera)
+            create_annotation_project(session, camera, pred)
 
 
 def create_video_from_frames(
@@ -281,8 +282,7 @@ def create_video_from_frames(
 
     return
 
-
-def create_annotation_project(session, camera):
+def create_annotation_project(session, camera,pred):
     """
     Create slp project for annotation to launch annotation GUI on
     * should we initialize instances for all the frames in the annotation video instead of just the first one?
@@ -311,6 +311,52 @@ def create_annotation_project(session, camera):
     labels = Labels(labeled_frames)
     annotations_dir.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
     labels.save(str(labels_output_path))  # Save the Labels to the .slp file
+    if pred:
+        model_dir = config.models/ camera
+        if not model_dir.exists():
+            logging.info(
+                f"Model directory for {camera} does not exist, skipping tracking.")
+        
+        else:
+
+            model_path = model_dir/"training_config.json"
+            command = [
+                "sleap-track",
+                labels_output_path,
+                "--video.index",
+                "0",
+                "-m",
+                model_path,
+                "-o",
+                labels_output_path,
+            ]
+        logging.info("Running sleap-track on annotation video")
+        # Run the sleap-track command using subprocess
+        subprocess.run(command, check=True)
+        logging.info("Tracking completed\n")
+
+    labels = load_file(str(labels_output_path))  # Reload the tracked data
+
+    for frame in labels.labeled_frames:
+        frame_idx = frame.frame_idx
+
+        # Check if predictions exist for this frame
+        predicted_instances = labels.get(frame_idx)
+
+        # Clear any existing instances (to avoid duplicates)
+        frame.instances = []
+
+        if predicted_instances:
+            # Add predicted instances
+            for predicted_instance in predicted_instances:
+                frame.instances.append(predicted_instance)
+        else:
+            # Create a default empty instance
+            empty_instance = Instance(skeleton=skeleton)
+            frame.instances.append(empty_instance)
+
+    # Step 4: Save the Updated Labels File
+    labels.save(str(labels_output_path))
 
     logging.info(f"Sleap project created for session {session}, camera {camera}.")
 
@@ -384,29 +430,29 @@ def annotate_videos(sessions, cameras=params.default_cameras, pred=False):
                     project_path = project_dir/f"{session}_{camera}.slp"
                     session_dir.mkdir(parents=True, exist_ok=True)
                     if not project_path.exists():
-                        create_annotation_project(session, camera)
-                        if pred:
-                            model_dir = config.models/ camera
-                            if not model_dir.exists():
-                                logging.info(
-                                    f"Model directory for {camera} does not exist, skipping."
-                                )
-                                continue
-                            model_path = model_dir/"training_config.json"
-                            command = [
-                                "sleap-track",
-                                project_path,
-                                "--video.index",
-                                "0",
-                                "-m",
-                                model_path,
-                                "-o",
-                                project_path,
-                            ]
-                            logging.info("Running sleap-track on annotation video")
-                            # Run the sleap-track command using subprocess
-                            subprocess.run(command, check=True)
-                            logging.info("Tracking completed\n")
+                        create_annotation_project(session, camera,pred)
+                        # if pred: # moved to create_annotation_project
+                        #     model_dir = config.models/ camera
+                        #     if not model_dir.exists():
+                        #         logging.info(
+                        #             f"Model directory for {camera} does not exist, skipping."
+                        #         )
+                        #         continue
+                        #     model_path = model_dir/"training_config.json"
+                        #     command = [
+                        #         "sleap-track",
+                        #         project_path,
+                        #         "--video.index",
+                        #         "0",
+                        #         "-m",
+                        #         model_path,
+                        #         "-o",
+                        #         project_path,
+                        #     ]
+                        #     logging.info("Running sleap-track on annotation video")
+                        #     # Run the sleap-track command using subprocess
+                        #     subprocess.run(command, check=True)
+                        #     logging.info("Tracking completed\n")
 
                     logging.info("Launching annotation GUI...")
                     subprocess.run(
@@ -683,10 +729,9 @@ def get_2Dpredictions(
                     model_path = model_dir/"training_config.json"
 
                     # Different cases for different input directories because different saving formats are used
-                    if config.recordings == config.recordings_remote:
-                        input_file = config.recordings/animal/session/f"{session}_cameras"/f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-                    elif config.recordings == config.recordings_local:
-                        input_file = config.recordings/f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                    input_file = config.recordings/animal/session/f"{session}_cameras"/f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                    # if config.recordings == config.recordings_local: # in case the videos are just copied in the local folder without the raw data structure
+                    #     input_file = config.recordings/f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
                     # else:
                     #     input_file = f"{params.input_2Dpred}/{session}/{camera}/{session}_{camera}.slp"
                     
