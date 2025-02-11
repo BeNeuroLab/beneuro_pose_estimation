@@ -335,31 +335,7 @@ def create_annotation_project(session, camera,pred):
         subprocess.run(command, check=True)
         logging.info("Tracking completed\n")
 
-    labels = load_file(str(labels_output_path))  # Reload the tracked data
-
-    for frame in labels.labeled_frames:
-        frame_idx = frame.frame_idx
-
-        # Check if predictions exist for this frame
-        predicted_instances = labels.get(frame_idx)
-
-        # Clear any existing instances (to avoid duplicates)
-        frame.instances = []
-
-        if predicted_instances:
-            # Add predicted instances
-            for predicted_instance in predicted_instances:
-                frame.instances.append(predicted_instance)
-        else:
-            # Create a default empty instance
-            empty_instance = Instance(skeleton=skeleton)
-            frame.instances.append(empty_instance)
-
-    # Step 4: Save the Updated Labels File
-    labels.save(str(labels_output_path))
-
-    logging.info(f"Sleap project created for session {session}, camera {camera}.")
-
+   
     return
 
 
