@@ -3,6 +3,7 @@ Initialize macro variables and functions
 """
 
 from pathlib import Path
+
 from rich import print
 
 
@@ -75,6 +76,21 @@ class Config:
                 setattr(self, key, Path(value))
 
     def assign_paths(self):
+        self.recordings_remote = self.REMOTE_PATH / "raw"
+        self.annotation_party = self.REMOTE_PATH / "processed" / "AnnotationParty"
+        self.annotations = self.annotation_party / "annotations"
+        self.models = (
+            self.REMOTE_PATH / "raw" / "pose-estimation" / "models" / "h1_new_setup"
+        )
+        self.skeleton_path = (
+            self.REPO_PATH / "beneuro_pose_estimation" / "sleap" / "skeleton.json"
+        )
+        self.recordings = self.annotation_party  # can change to self.recordings_local
+        self.predictions2D = self.LOCAL_PATH / "predictions2D"
+        self.training = self.REMOTE_PATH / "pose-estimation" / "models" / "uren_setup"
+        self.predictions3D = self.LOCAL_PATH / "predictions3D"
+        self.calibration_videos = self.REMOTE_PATH / "raw" / "calibration_videos"
+        self.calibration = self.LOCAL_PATH / "calibration_config"
         return
 
 

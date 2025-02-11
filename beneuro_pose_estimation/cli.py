@@ -1,15 +1,15 @@
 from pathlib import Path
 
 import typer
-
+from typing import List, Optional
 from rich import print
 
 from beneuro_pose_estimation import params, set_logging
 from beneuro_pose_estimation.config import _check_config, _get_package_path, \
     _check_is_git_track, _check_root, _get_env_path
-from beneuro_pose_estimation.sleap.sleapTools import annotate_videos
+# from beneuro_pose_estimation.sleap.sleapTools import annotate_videos, get_2Dpredictions
 from beneuro_pose_estimation.update_bnp import check_for_updates, update_bnp
-
+from pathlib import Path
 # Create a Typer app
 app = typer.Typer(
     add_completion=False,  # Disable the auto-completion options
@@ -22,28 +22,74 @@ logger = set_logging(__name__)
 
 @app.command()
 def annotate(
-    session_name: str = typer.Argument(..., help="Session name to annotate"),
+    session: str = typer.Argument(..., help="Session name to annotate"),
     camera: str = typer.Argument(..., help=f"Camera name to annotate. Must be part of {params.default_cameras}"),
-    pred: bool = typer.Option(True, "--pred/--no-pred", help="Run annotation on prediction or not.", ),
+    pred: bool = typer.Option(True, "--pred/--no-pred", help="Run annotation on prediction or not." )
 ):
     """
-    Annotate sleap project
+    Create annotation project for the session if it doesn't exist and launch annotation GUI.
     """
+    from beneuro_pose_estimation.sleap.sleapTools import annotate_videos
     annotate_videos(
-        sessions=session_name,
+        sessions=session,
         cameras=camera,
         pred=pred)
 
     return
 
-def create_annotation_project():
+@app.command()
+def create_annotation_projects(
+    sessions: List[str] = typer.Argument(
+        ..., help="Session name(s) to annotate. Provide as a single session name or a list of session names."
+    ),
+    cameras: List[str] = typer.Option(
+        None, "--cameras", "-c", help=f"Camera name(s) to annotate. Provide as a single camera name or a list of camera names. Defaults to {params.default_cameras} if not specified."
+    ),
+    pred: bool = typer.Option(True, "--pred/--no-pred", help="Run annotation on prediction or not." )
+    ):
+    """
+    Create annotation projects for a list of sessions and cameras without launching the GUI.
+    """
+    from beneuro_pose_estimation.sleap.sleapTools import create_annotation_projects
+    create_annotation_projects(sessions, cameras,pred)
     return
 
-def run_pose_estimation():
+@app.command()
+def pose(
+    sessions: List[str] = typer.Argument(
+        ..., help="Session name(s) to run pose estimation on. Provide as a single session name or a list of session names."
+    )
+):
+    from beneuro_pose_estimation.anipose.aniposeTools import run_pose_estimation
+
+    run_pose_estimation(sessions)
+
     return
 
-def get_2d_predictions():
+@app.command()
+def track_2d(
+    sessions: List[str] = typer.Argument(
+        ..., help="Session name(s) to track. Provide as a single session name or a list of session names."
+    ),
+    cameras: List[str] = typer.Option(
+        None, "--cameras", "-c", help=f"Camera name(s) to track. Provide as a single camera name or a list of camera names. Defaults to {params.default_cameras} if not specified."
+    ),
+):
+    """
+    Get 2D predictions for a list of sessions and cameras
+    """
+    if cameras is None:
+        cameras = params.default_cameras
+        logger.info(f"No cameras specified. Predictions will be run on all default cameras: {params.default_cameras}")
+    from beneuro_pose_estimation.sleap.sleapTools import get_2Dpredictions
+    get_2Dpredictions(
+        sessions=sessions,
+        cameras = cameras
+
+    )
+    
     return
+
 
 # =================================== Updating ==========================================
 
