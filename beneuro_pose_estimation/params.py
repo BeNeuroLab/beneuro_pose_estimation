@@ -32,14 +32,14 @@ camera_name_mapping = {
 
 ## SLEAP annotation parameters
 frame_selection_pipeline = FeatureSuggestionPipeline(
-    per_video=100,
+    per_video=150,
     scale=0.25,
     sample_method="stride",
-    feature_type="brisk", # hog
+    feature_type="hog", # or brisk
     brisk_threshold=10,
     n_components=10,
     n_clusters=10,
-    per_cluster=5,
+    per_cluster=15,
 )
 
 
