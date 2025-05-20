@@ -58,11 +58,17 @@ def create_annotation_projects(
 def pose(
     sessions: List[str] = typer.Argument(
         ..., help="Session name(s) to run pose estimation on. Provide as a single session name or a list of session names."
-    )
+    ),
+    custom_model_name: Optional[str] = typer.Option(
+        None,
+        "--model-name", "-m",
+        help="Optional custom model name to override the default."
+    ),
+
 ):
     from beneuro_pose_estimation.anipose.aniposeTools import run_pose_estimation
 
-    run_pose_estimation(sessions)
+    run_pose_estimation(sessions, custom_model_name)
 
     return
 
@@ -79,7 +85,6 @@ def track_2d(
     Get 2D predictions for a list of sessions and cameras
     """
     if cameras is None:
-        cameras = params.default_cameras
         logger.info(f"No cameras specified. Predictions will be run on all default cameras: {params.default_cameras}")
     from beneuro_pose_estimation.sleap.sleapTools import get_2Dpredictions
     get_2Dpredictions(
@@ -90,6 +95,132 @@ def track_2d(
     
     return
 
+@app.command()
+def create_training_project(
+    camera: str = typer.Argument(..., help=f"Camera name to annotate. Must be part of {params.default_cameras}"),
+    sessions: List[str] = typer.Argument(
+        ..., help="Session name(s) to annotate. Provide as a single session name or a list of session names."
+    )
+    ):
+    """
+    Create annotation projects for a list of sessions and cameras without launching the GUI.
+    """
+    from beneuro_pose_estimation.sleap.sleapTools import create_training_file
+    create_training_file(camera,sessions)
+    return
+
+
+@app.command()
+def cleanup(
+    session: str = typer.Argument(..., help="Session name to clean up intermediate files for."),
+    slp: bool = typer.Option(
+        False,
+        "--slp", "-s",
+        help="Also clean up .slp files (2D prediction files)."
+    )
+):
+    """
+    Clean up intermediate files for a session.
+    By default, only asks about cleaning up triangulation files.
+    Use --slp flag to also clean up 2D prediction .slp files.
+    """
+    from beneuro_pose_estimation.anipose.aniposeTools import cleanup_intermediate_files
+    
+    cleanup_intermediate_files(session, include_slp=slp)
+    
+    return
+
+
+
+@app.command()
+def eval_report(
+    session_name: str = typer.Argument(..., help="Session name to evaluate"),
+    test_name: Optional[str] = typer.Option(None, "--test-name", "-t", help="Test name to evaluate"),
+):
+    """
+    TBD
+    Generate a comprehensive evaluation report for a session, including:
+    - Mean confidence scores per camera and per body point
+    - Reprojection errors per camera and per body point
+    - Detection percentages per camera and per body point
+    - Joint angle statistics
+    - Missing frame statistics
+    """
+    from beneuro_pose_estimation.evaluation import generate_evaluation_report
+    from pathlib import Path
+    import json
+
+    report = generate_evaluation_report(session_name, test_name)
+
+    return
+
+@app.command()
+def pose_test(
+    session: str = typer.Argument(..., help="Session name to run test pose estimation on."),
+    test_name: Optional[str] = typer.Option(
+        None,
+        "--test-name", "-n",
+        help="An optional name for this pose test run."
+    ),
+    cameras: List[str] = typer.Option(
+        None, 
+        "--cameras", "-c",
+        help="Cameras to process. If not provided, uses default cameras from params."
+    ),
+    force_new: bool = typer.Option(
+        False,
+        "--force-new", "-f",
+        help="Force creation of new test videos even if they exist."
+    ),
+    start_frame: Optional[int] = typer.Option(
+        None,
+        "--start-frame", "-s",
+        help="Frame number to start from. If not specified, uses first 100 frames."
+    ),
+    duration: Optional[int] = typer.Option(
+        10,
+        "--duration", "-d",
+        help="Duration in seconds. If not specified, uses 100 frames."
+    )
+):
+    """
+    Run pose estimation pipeline on short test videos.
+    
+    This command creates short test videos from each camera, runs the full pose pipeline on them,
+    and generates an evaluation report. The test videos can be either newly created or reused
+    if they already exist.
+    """
+    from beneuro_pose_estimation.anipose.aniposeTools import run_pose_test
+
+    run_pose_test(
+        session=session,
+        test_name=test_name,
+        cameras=cameras or params.default_cameras,
+        force_new_videos=force_new,
+        start_frame=start_frame,
+        duration_seconds=duration,
+    )
+
+    return
+
+@app.command()
+def train(
+    cameras: Optional[List[str]] = typer.Option(
+        None,
+        "--cameras", "-c",
+        help=(
+            "List of camera names to train models for. "
+            "If not provided, uses default cameras from params.default_cameras."
+        ),
+    ),
+):
+    """
+    Train SLEAP models for specified cameras (or all defaults).
+    """
+    from beneuro_pose_estimation.sleap.sleapTools import train_models
+    cams = cameras or params.default_cameras
+    # train_models is the function you already wrote
+    train_models(cams)
 
 # =================================== Updating ==========================================
 

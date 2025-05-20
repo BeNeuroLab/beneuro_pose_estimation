@@ -1,7 +1,7 @@
 {
     "data": {
         "labels": {
-            "training_labels": "E:/complete-projects/projects/h1_new_setup/Camera_Back_Right.slp",
+            "training_labels": "",
             "validation_labels": null,
             "validation_fraction": 0.1,
             "test_labels": null,
@@ -959,16 +959,16 @@
             "gaussian_noise": true,
             "gaussian_noise_mean": 5.0,
             "gaussian_noise_stddev": 1.0,
-            "contrast": true,
+            "contrast": false,
             "contrast_min_gamma": 0.5,
-            "contrast_max_gamma": 2.0,
-            "brightness": true,
-            "brightness_min_val": 0.0,
+            "contrast_max_gamma": 1.5,
+            "brightness": false,
+            "brightness_min_val": -10.0,
             "brightness_max_val": 10.0,
             "random_crop": false,
             "random_crop_height": 256,
             "random_crop_width": 256,
-            "random_flip": true,
+            "random_flip": false,
             "flip_horizontal": false
         },
         "online_shuffling": true,
@@ -1005,10 +1005,10 @@
     },
     "outputs": {
         "save_outputs": true,
-        "run_name": "240521_200618.single_instance.n=391",
-        "run_name_prefix": "Camera_Back_Right_h1_newsetup",
+        "run_name": "test_1",
+        "run_name_prefix": "Camera_Front_Left_",
         "run_name_suffix": "",
-        "runs_folder": "E:/complete-projects/projects/h1_new_setup\\models",
+        "runs_folder": "/home/il620/beneuro_pose_estimation/data/raw/pose_estimation/models/Camera_Front_Left",
         "tags": [
             ""
         ],
@@ -1041,5 +1041,5 @@
     "name": "",
     "description": "",
     "sleap_version": "1.3.3",
-    "filename": "E:/complete-projects/projects/h1_new_setup\\models\\Camera_Back_Right_h1_newsetup240521_200618.single_instance.n=391\\training_config.json"
+    "filename": "/home/il620/beneuro_pose_estimation/beneuro_pose_estimation/training_config.json"
 }

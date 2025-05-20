@@ -1,0 +1,19 @@
+project = "beneuro_pose_estimation"
+nesting = 2
+video_extension = "mp4"
+
+[angles]
+right_knee_angle = [ "hip_center", "right_knee", "right_ankle",]
+left_knee_angle = [ "hip_center", "left_knee", "left_ankle",]
+right_ankle_angle = [ "right_knee", "right_ankle", "right_foot",]
+left_ankle_angle = [ "left_knee", "left_ankle", "left_foot",]
+right_wrist_angle = [ "right_elbow", "right_wrist", "right_paw",]
+left_wrist_angle = [ "left_elbow", "left_wrist", "left_paw",]
+right_elbow_angle = [ "right_shoulder", "right_elbow", "right_wrist",]
+left_elbow_angle = [ "left_shoulder", "left_elbow", "left_wrist",]
+
+
+
+
+[pipeline]
+pose_3d = "pose-estimation"
