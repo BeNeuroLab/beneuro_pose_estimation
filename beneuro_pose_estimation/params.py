@@ -1,8 +1,12 @@
 from aniposelib.boards import CharucoBoard
+# from sleap.info.feature_suggestions import (
+#     FeatureSuggestionPipeline,
+# )
 from sleap.info.feature_suggestions import (
     FeatureSuggestionPipeline,
 )
 import cv2
+import numpy as np
 
 
 ############### CONFIGURATIONS
@@ -19,13 +23,13 @@ default_cameras = [
 
 
 camera_name_mapping = {
-    "Camera_Top_Left": "camera_0",
-    "Camera_Side_Left": "camera_1",
-    "Camera_Front_Right": "camera_2",
-    "Camera_Face": "camera_3",
-    "Camera_Front_Left": "camera_4",
-    "Camera_Side_Right": "camera_5",
-    "Camera_Back_Right": "camera_6",
+    "Camera_Top_Left": "Camera_0",
+    "Camera_Side_Left": "Camera_1",
+    "Camera_Front_Right": "Camera_2",
+    "Camera_Face": "Camera_3",
+    "Camera_Front_Left": "Camera_4",
+    "Camera_Side_Right": "Camera_5",
+    "Camera_Back_Right": "Camera_6",
 }
 
 #### SLEAP config
@@ -111,14 +115,17 @@ constraints = [
     [6, 13],
     [13, 14],
     [14, 15],
+    # 
+    [0, 6],  
+    [3, 4],
 ]
 
-aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+# aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
 
-board = cv2.aruco.CharucoBoard((5, 4), 10, 6, aruco_dict)
-# board = CharucoBoard(
-#     5, 4, square_length=10, marker_length=6, marker_bits=4, dict_size=250
-# )
+# board = cv2.aruco.CharucoBoard((5, 4), 10, 6, aruco_dict)
+board = CharucoBoard(
+    5, 4, square_length=10, marker_length=6, marker_bits=4, dict_size=250
+)
 fisheye = False
 
 
@@ -127,21 +134,25 @@ triangulation_params = {
     "scale_smooth": 5,
     "scale_length": 4,
     "scale_length_weak": 1,
-    "reproj_error_threshold": 5,
-    "reproj_loss": "l2",
+    "reproj_error_threshold": 15,
+    "reproj_loss": "soft_l1",
     "n_deriv_smooth": 2,
+    "ransac": True
 }
+# "soft_l1" "l2"
+# ransac
 frame_window = 1000
 
 
 # Angle calculation config
 angles = {
-    "right_knee": ["hip_center", "right_knee", "right_ankle"],
-    "left_knee": ["hip_center", "left_knee", "left_ankle"],
-    "right_ankle": ["right_knee", "right_ankle", "right_foot"],
-    "left_ankle": ["left_knee", "left_ankle", "left_foot"],
-    "right_wrist": ["right_elbow", "right_wrist", "right_paw"],
-    "left_wrist": ["left_elbow", "left_wrist", "left_paw"],
-    "right_elbow": ["right_shoulder", "right_elbow", "right_wrist"],
-    "left_elbow": ["left_shoulder", "left_elbow", "left_wrist"],
+    "right_knee_angle": ["hip_center", "right_knee", "right_ankle"],
+    "left_knee_angle": ["hip_center", "left_knee", "left_ankle"],
+    "right_ankle_angle": ["right_knee", "right_ankle", "right_foot"],
+    "left_ankle_angle": ["left_knee", "left_ankle", "left_foot"],
+    "right_wrist_angle": ["right_elbow", "right_wrist", "right_paw"],
+    "left_wrist_angle": ["left_elbow", "left_wrist", "left_paw"],
+    "right_elbow_angle": ["right_shoulder", "right_elbow", "right_wrist"],
+    "left_elbow_angle": ["left_shoulder", "left_elbow", "left_wrist"],
 }
+

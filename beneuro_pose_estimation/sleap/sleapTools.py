@@ -195,7 +195,8 @@ def select_frames_to_annotate(
         / animal
         / session
         / f"{session}_cameras"
-        / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+        # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+        / f"{params.camera_name_mapping.get(camera, camera)}.avi"
     )
     try:
         video = Video.from_filename(str(video_path))
@@ -541,7 +542,7 @@ def create_training_config_file(config_file):
     return
 
 
-def train_models(cameras=params.default_cameras, sessions=None):
+def train_models_old(cameras=params.default_cameras, sessions=None):
     """
     TBD
     - create config file with training parameters; check if config file exists, if not create it using the parameters in params
@@ -586,6 +587,64 @@ def train_models(cameras=params.default_cameras, sessions=None):
 
     logging.info("All training has been executed.")
 
+def train_models(cameras=params.default_cameras):
+    """
+    TBD
+    - create config file with training parameters; check if config file exists, if not create it using the parameters in params
+    - test creation of training project
+    - can be done from GUI
+    """
+
+    if isinstance(cameras, str):
+        cameras = [cameras]
+
+    # Run sleap-train for each session and camera combination
+    for camera in cameras:
+        # Define paths for model and labels
+        # model_dir = os.path.join(params.slp_models_dir, camera)
+        labels_file = config.training / camera / f"{camera}.pkg.slp"
+        config_file = config.training_config
+
+        # Check if the .slp file exists; if not, run create_training_file
+        if not labels_file.exists():
+            logging.info(f"{labels_file} does not exist")
+            return 
+                         
+                         
+        # Ensure configuration file exists
+        if not config_file.exists():
+            logging.info(f"Configuration file does not exist.")
+            return
+
+        # Run sleap-train command
+        logging.info(f"Training model for {camera}...")
+        command = ["sleap-train", config_file, labels_file]
+        result = subprocess.run(command, cwd=str(config_file.parent))
+
+        if result.returncode == 0:
+            logging.info(f"Finished training for {camera}.")
+        else:
+            logging.info(f"Training failed for {camera}.")
+
+    logging.info("All training has been executed.")
+
+def upload_model(model_name):
+    """
+    TBD
+    - upload models to the server
+    """
+    # Check if the model directory exists
+    if not config.remote_models.exists():
+        logging.info(f"Model directory does not exist.")
+        return
+
+    # Upload models to the server
+    for camera in config.models.iterdir():
+        if camera.is_dir():
+            # Upload each model directory to the server
+            pass  # Implement your upload logic here
+
+    logging.info("Models uploaded successfully.")
 
 def select_frames_to_predict():
     return
@@ -594,6 +653,8 @@ def select_frames_to_predict():
 def get_2Dpredictions(
     sessions,
     cameras=params.default_cameras,
+    test_name = None,
+    custom_model_name =None,
     frames=params.frames_to_predict,
     input_file=None,
     output_file=None,
@@ -604,6 +665,8 @@ def get_2Dpredictions(
     -------
 
     """
+    if test_name is not None:
+        custom_model_name = test_name
     logging.info("Running get_2Dpredictions...")
     ## check if the output folder exists
 
@@ -614,13 +677,10 @@ def get_2Dpredictions(
 
     if isinstance(sessions, str):
         sessions = [sessions]
+    cameras = cameras or params.default_cameras
     if isinstance(cameras, str):
         cameras = [cameras]
-    try:
-        config.predictions2D.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        logging.error(f"Failed to create predictions directory: {e}")
-        return
+
 
     tracking_options = params.tracking_options
 
@@ -656,82 +716,62 @@ def get_2Dpredictions(
             subprocess.run(command, check=True)
             logging.info("Tracking completed\n")
 
-        else:
-            input_dir = input_file
-            for camera in cameras:
-                model_dir = f"{params.slp_models_dir}/{camera}"
-                if not os.path.exists(model_dir):
-                    logging.info(f"Model directory for {camera} does not exist, skipping.")
-                    continue
-                model_path = f"{model_dir}/training_config.json"
-                input_file = (
-                    f"{input_dir}/{params.camera_name_mapping.get(camera, camera)}.avi"
-                )
-                output_file = (
-                    f"{params.predictions_dir}/{sessions[0]}_{camera}.slp.predictions.slp"
-                )
-
-                logging.info(f"Running sleap-track for camera {camera}")
-                logging.info(f"Input file: {input_file}")
-                logging.info(f"Output file: {output_file}")
-
-                # construct sleap-track command
-
-                command = [
-                    "sleap-track",
-                    input_file,
-                    "--video.index",
-                    "0",
-                    "-m",
-                    model_path,
-                    "-o",
-                    output_file,
-                ]
-
-                # Add frames to predict on if specified - otherwise all frames
-                if frames:
-                    command.extend(["--frames", frames])
-
-                # Add tracking options if specified
-                if tracking_options:
-                    command.extend(tracking_options.split())
-
-                # Run the sleap-track command using subprocess
-                subprocess.run(command, check=True)
-                logging.info(
-                    f"Tracking completed for session {sessions[0]}, camera {camera}\n"
-                )
-
+    
     ## Otherwise go through the list of sessions and cameras
     else:
         for session in sessions:
             animal = session.split("_")[0]
-            for camera in cameras:
+            if test_name is not None:
+                predictions_dir = config.predictions2D / animal / session / "pose-estimation" / "tests" / test_name 
+            else:
+                predictions_dir = config.predictions2D / animal / session / "pose-estimation" 
+            predictions_dir.mkdir(parents=True, exist_ok=True)
+            for camera in cameras:  
                 try:
-                    model_dir = config.models / camera
-                    if not model_dir.exists():
+                    camera_dir = predictions_dir / camera
+                    camera_dir.mkdir(parents=True, exist_ok=True)
+                    output_file = (
+                        camera_dir / f"{session}_{camera}.slp.predictions.slp"
+                    )
+                    if output_file.exists():
                         logging.info(
-                            f"Model directory for {camera} does not exist, skipping."
+                            f"Predictions file for {session} and camera {camera} already exists, skipping."
                         )
                         continue
-                    model_path = model_dir / "training_config.json"
-
-                    # Different cases for different input directories because different saving formats are used
+                    # input_file = (
+                    #     config.recordings
+                    #     / animal
+                    #     / session
+                    #     / f"{session}_cameras"
+                    #     # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                    #     / f"{params.camera_name_mapping.get(camera, camera)}.avi"
+                    # )
                     input_file = (
-                        config.recordings
-                        / animal
-                        / session
+                        predictions_dir.parent
                         / f"{session}_cameras"
-                        / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                        # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                        / f"{params.camera_name_mapping.get(camera, camera)}.avi"
                     )
-                    # if config.recordings == config.recordings_local: # in case the videos are just copied in the local folder without the raw data structure
-                    #     input_file = config.recordings/f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-                    # else:
-                    #     input_file = f"{params.input_2Dpred}/{session}/{camera}/{session}_{camera}.slp"
-
-                    output_file = (
-                        config.predictions2D / f"{session}_{camera}.slp.predictions.slp"
-                    )
+                    if custom_model_name is not None:
+                        model_dir = config.custom_models / camera / f"{camera}_{test_name}"
+                        if not model_dir.exists():
+                            logging.info(
+                                f"Custom Model directory for {camera} does not exist, looking for general  model."
+                            )
+                        model_dir = config.models / camera
+                        if not model_dir.exists():
+                            logging.info(
+                                f"Model directory for {camera} does not exist, skipping."
+                            )
+                            continue
+                    else:
+                        model_dir = config.models / camera
+                        if not model_dir.exists():
+                            logging.info(
+                                f"Model directory for {camera} does not exist, skipping."
+                            )
+                            continue
+                    model_path = model_dir / "training_config.json"
 
                     logging.info(
                         f"Running sleap-track for session {session} and camera {camera}"
@@ -771,7 +811,7 @@ def get_2Dpredictions(
                         f"Failed to process session {session}, camera {camera}: {e}"
                     )
 
-    return
+    return 
 
 
 def visualize_predictions(sessions, cameras=params.default_cameras):
@@ -784,9 +824,16 @@ def visualize_predictions(sessions, cameras=params.default_cameras):
     if isinstance(cameras, str):
         cameras = [cameras]
     for session in sessions:
+        animal = session.split("_")[0]
         for camera in cameras:
-            predictions_path = (
-                config.predictions2D / f"{session}_{camera}.slp.predictions.slp"
-            )
-            subprocess.run(["sleap-label", predictions_path])
+            if "test" in session:
+                session_name = session.split("_")[0]+"_"+session.split("_")[1]+"_"+session.split("_")[2]+"_"+session.split("_")[3]+session.split("_")[4]+session.split("_")[5]
+                predictions_path = (
+                    config.predictions2D/animal/session_name/"pose-estimation"/"tests"/session/"pose-estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
+                )
+            else:
+                predictions_path = (
+                    config.predictions2D/animal/session/"pose-estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
+                )
+                subprocess.run(["sleap-label", predictions_path])
     return
