@@ -79,24 +79,23 @@ class Config:
         self.recordings_remote = self.REMOTE_PATH / "raw"
         self.annotation_party = self.REMOTE_PATH / "processed" / "AnnotationParty"
         self.annotations = self.annotation_party / "annotations"
-        # self.models = (
-        #     self.REMOTE_PATH / "raw" / "pose-estimation" / "models" / "h1_new_setup"
-        # )
+
         self.models_local = self.LOCAL_PATH / "raw" / "pose-estimation" / "models"
         self.models_remote = self.annotation_party / "models"
         self.custom_models = self.models_local
+
         self.models = self.models_remote
         self.skeleton_path = (
             self.REPO_PATH / "beneuro_pose_estimation" / "sleap" / "skeleton.json"
         )
-        self.recordings = self.annotation_party  # self.LOCAL_PATH / "raw" 
+        self.recordings = self.LOCAL_PATH / "raw" 
+        # self.recordings = self.annotation_party 
         self.predictions2D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.training = self.annotation_party / "training"
         self.training_config = self.REPO_PATH / "beneuro_pose_estimation"/ "training_config.json"
-        self.predictions3D = self.LOCAL_PATH / "raw" # change to 'processed'
-        # self.predictions3D = self.LOCAL_PATH / "raw"
+        self.predictions3D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.calibration_videos = self.REMOTE_PATH / "raw" / "calibration_videos"
-        self.calibration = self.LOCAL_PATH / "raw"/ "pose_estimation"/ "calibration_config"
+        self.calibration = self.LOCAL_PATH / "raw"/ "pose-estimation"/ "calibration_config"
         self.angles_config = self.REPO_PATH / "beneuro_pose_estimation"
         return
 

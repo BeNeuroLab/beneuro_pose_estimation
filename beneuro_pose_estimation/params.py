@@ -134,13 +134,13 @@ triangulation_params = {
     "scale_smooth": 5,
     "scale_length": 4,
     "scale_length_weak": 1,
-    "reproj_error_threshold": 15,
+    "reproj_error_threshold": 5,
     "reproj_loss": "soft_l1",
     "n_deriv_smooth": 2,
-    "ransac": True
+    "ransac": False
 }
-# "soft_l1" "l2"
-# ransac
+
+
 frame_window = 1000
 
 
