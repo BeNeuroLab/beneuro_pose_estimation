@@ -823,6 +823,10 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
                 except Exception as e:
                     logger.error(f"Error deleting {tri_file}: {e}")
         logging.info(f"Pose estimation completed for {session}.")
+        return test_dir
+
+        
+        
 
     except Exception as e:
         logger.error(f"Error in pose test for {session}: {e}")
