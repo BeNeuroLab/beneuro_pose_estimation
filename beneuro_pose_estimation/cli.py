@@ -113,24 +113,34 @@ def create_training_project(
 @app.command()
 def cleanup(
     session: str = typer.Argument(..., help="Session name to clean up intermediate files for."),
-    slp: bool = typer.Option(
-        False,
-        "--slp", "-s",
-        help="Also clean up .slp files (2D prediction files)."
-    )
+  
 ):
     """
     Clean up intermediate files for a session.
     By default, only asks about cleaning up triangulation files.
     Use --slp flag to also clean up 2D prediction .slp files.
     """
-    from beneuro_pose_estimation.anipose.aniposeTools import cleanup_intermediate_files
+    from beneuro_pose_estimation.tools import cleanup_intermediate_files
     
-    cleanup_intermediate_files(session, include_slp=slp)
+    cleanup_intermediate_files(session)
     
     return
 
 
+
+@app.command()
+def model_up(
+    test_folder_name: str = typer.Argument(
+        ..., 
+        help="Name of the test folder under config.models/<camera>/ to copy to remote_models"
+    )
+):
+    """
+    Recursively copy a model test folder from your local models path to the remote_models path,
+    prompting if it already exists.
+    """
+    from beneuro_pose_estimation.tools import copy_model_to_remote
+    copy_model_to_remote(test_folder_name)
 
 @app.command()
 def eval_report(
@@ -175,7 +185,7 @@ def pose_test(
     start_frame: Optional[int] = typer.Option(
         None,
         "--start-frame", "-s",
-        help="Frame number to start from. If not specified, uses first 100 frames."
+        help="Frame number to start from. If not specified, uses frame 0."
     ),
     duration: Optional[int] = typer.Option(
         10,
@@ -220,7 +230,7 @@ def train(
     from beneuro_pose_estimation.sleap.sleapTools import train_models
     cams = cameras or params.default_cameras
     # train_models is the function you already wrote
-    train_models(cams)
+    train_models(cam, custom_labels = custom_labels)
 
 # =================================== Updating ==========================================
 

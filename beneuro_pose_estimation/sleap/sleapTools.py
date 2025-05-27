@@ -587,7 +587,7 @@ def train_models_old(cameras=params.default_cameras, sessions=None):
 
     logging.info("All training has been executed.")
 
-def train_models(cameras=params.default_cameras):
+def train_models(cameras=params.default_cameras, custom_labels = False):
     """
     TBD
     - create config file with training parameters; check if config file exists, if not create it using the parameters in params
@@ -618,7 +618,10 @@ def train_models(cameras=params.default_cameras):
 
         # Run sleap-train command
         logging.info(f"Training model for {camera}...")
-        command = ["sleap-train", config_file, labels_file]
+        if custom_labels:
+            command = ["sleap-train", str(config_file)]
+        else:
+            command = ["sleap-train", str(config_file), str(labels_file)]
         result = subprocess.run(command, cwd=str(config_file.parent))
 
         if result.returncode == 0:
@@ -753,24 +756,22 @@ def get_2Dpredictions(
                         / f"{params.camera_name_mapping.get(camera, camera)}.avi"
                     )
                     if custom_model_name is not None:
-                        model_dir = config.custom_models / camera / f"{camera}_{test_name}"
+                        
+                        model_dir = config.custom_models / camera / f"{camera}_{custom_model_name}"
+                        
                         if not model_dir.exists():
                             logging.info(
                                 f"Custom Model directory for {camera} does not exist, looking for general  model."
                             )
-                        model_dir = config.models / camera
-                        if not model_dir.exists():
-                            logging.info(
-                                f"Model directory for {camera} does not exist, skipping."
-                            )
-                            continue
+                            model_dir = config.models / camera
+                            
                     else:
                         model_dir = config.models / camera
-                        if not model_dir.exists():
-                            logging.info(
-                                f"Model directory for {camera} does not exist, skipping."
-                            )
-                            continue
+                    if not model_dir.exists():
+                        logging.info(
+                            f"Model directory for {camera} does not exist, skipping."
+                        )
+                        continue
                     model_path = model_dir / "training_config.json"
 
                     logging.info(

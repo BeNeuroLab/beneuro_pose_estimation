@@ -113,111 +113,32 @@ def load_2d_predictions_old(session_dir, cameras=params.default_cameras):
     logger.info(f"Final stacked shape: {stacked.shape}")
     return stacked
 
-def calculate_reprojection_errors(session_name, test_dir, cameras=params.default_cameras):
+def _print_error_stats(errors: np.ndarray, cameras: list):
     """
-    Calculate reprojection errors between 3D predictions and 2D data.
-    Returns dict with per_camera, per_keypoint, and overall stats.
+    Helper to print mean per keypoint, per camera, and overall stats.
     """
-    logger.info(f"Analyzing session: {session_name}")
+    # Stack: (n_cams, n_frames, n_kp)
+    mean_per_kp  = np.nanmean(errors, axis=(0, 1))  # (n_kp,)
+    mean_per_cam = np.nanmean(errors, axis=(1, 2))  # (n_cams,)
+    flat         = errors.flatten()
+    mean_all     = float(np.nanmean(flat))
+    median_all   = float(np.nanmedian(flat))
+    std_all      = float(np.nanstd(flat))
 
-    # 1) Load 2D predictions
-    preds2d = load_2d_predictions(session_name, test_dir, cameras)
-    if preds2d is None:
-        return None
-
-    # 2) Load raw 3D predictions
-    points3d_raw = load_3d_predictions(session_name, test_dir)
-    if points3d_raw is None:
-        return None
-
-    # Handle both 3-D and 4-D shapes
-    if points3d_raw.ndim == 3:
-        # (n_frames, n_kp, 3) → add track dim
-        n_frames, n_kp, _ = points3d_raw.shape
-        points3d_4d = points3d_raw[:, None, :, :]  # → (n_frames,1,n_kp,3)
-    elif points3d_raw.ndim == 4:
-        n_frames, n_tracks, n_kp, _ = points3d_raw.shape
-        points3d_4d = points3d_raw
-    else:
-        raise ValueError(f"Unexpected points3d shape {points3d_raw.shape}")
-    # logger.info(f"points3d_4d shape: {points3d_4d.shape}")
-
-    # We’ll compare using the first track:
-    points3d = points3d_4d[:, 0, :, :]  # (n_frames, n_kp, 3)
-
-    # 3) Load calibration
-    if session_name.split("_")[1] == "2025":
-        calib_file = config.calibration / "calibration_2025_03_12_11_45.toml"
-    else:
-        calib_file = aniposeTools.get_most_recent_calib(session_name)
-    if not calib_file or not calib_file.exists():
-        logger.error(f"Missing calibration for {session_name}")
-        return None
-
-    # 4) Reproject all tracks back into each camera
-    reproj_file = test_dir / f"{session_name}_reprojections.h5"
-    slap.reproject(
-        p3d=points3d_4d,                 # 4-D array as required
-        calib=str(calib_file),
-        frames=(0, n_frames),
-        fname=str(reproj_file),
-    )
-
-    # 5) Load per-camera reprojections
-    reproj = {}
-    with h5py.File(reproj_file, "r") as f:
-        for cam in cameras:
-            arr = f[cam][:]
-            # Squeeze any extra singleton dims beyond the last two
-            while arr.ndim > 3 and 1 in arr.shape[:-2]:
-                arr = arr.squeeze(arr.shape.index(1))
-            # If shape is (n_kp, n_frames, 2), transpose
-            if arr.shape[0] == n_kp and arr.shape[1] == n_frames:
-                arr = arr.transpose(1, 0, 2)
-            assert arr.shape == (n_frames, n_kp, 2), f"Bad reproj shape for {cam}: {arr.shape}"
-            reproj[cam] = arr
-            # logger.info(f"Reproj[{cam}] shape: {arr.shape}")
-
-    # 6) Compute per-camera errors
-    errors = {}
-    for i, cam in enumerate(cameras):
-        # preds2d[i]: (n_tracks,2,n_kp,n_frames)
-        pred2d = preds2d[i, 0]                   # (2,n_kp,n_frames)
-        pred_xy = np.transpose(pred2d, (2, 1, 0))  # → (n_frames,n_kp,2)
-        err = np.linalg.norm(reproj[cam] - pred_xy, axis=-1)  # (n_frames,n_kp)
-        errors[cam] = err
-        # logger.info(f"errors[{cam}] shape: {err.shape}")
-
-    # 7) Stack and summarize
-    all_err     = np.stack(list(errors.values()), axis=0)  # (n_cams,n_frames,n_kp)
-    mean_per_kp = np.nanmean(all_err, axis=(0, 1))       # (n_kp,)
-    mean_per_cam= np.nanmean(all_err, axis=(1, 2))       # (n_cams,)
-    flat        = all_err.flatten()
-    mean_all    = float(np.nanmean(flat))
-    median_all  = float(np.nanmedian(flat))
-    std_all     = float(np.nanstd(flat))
-
-    # 8) Log results
     print("Mean reprojection error per keypoint (px):")
     for idx, kp in enumerate(params.body_parts):
         print(f"  {kp}: {mean_per_kp[idx]:.3f}")
 
-    print("Mean reprojection error per camera (px):")
+    print("\nMean reprojection error per camera (px):")
     for idx, cam in enumerate(cameras):
         print(f"  {cam}: {mean_per_cam[idx]:.3f}")
 
-    print("Overall error stats (px):")
+    print("\nOverall error stats (px):")
     print(f"  Mean   : {mean_all:.3f}")
     print(f"  Median : {median_all:.3f}")
     print(f"  Std    : {std_all:.3f}")
 
-    return {
-        "per_camera": mean_per_cam,
-        "per_keypoint": mean_per_kp,
-        "overall": {"mean": mean_all, "median": median_all, "std": std_all},
-    }
-
-def get_reprojection_errors_array(session_name, test_dir, cameras=params.default_cameras):
+def get_reprojection_errors(session_name, test_dir, cameras=params.default_cameras, print_stats = False):
     """
     Returns a NumPy array of shape (n_cameras, n_frames, n_keypoints) containing
     reprojection errors for each camera, frame, and keypoint.
@@ -226,50 +147,66 @@ def get_reprojection_errors_array(session_name, test_dir, cameras=params.default
     preds2d = load_2d_predictions(session_name, test_dir, cameras)
     points3d = load_3d_predictions(session_name, test_dir)
     
-    # Ensure a 4D array for triangulation: (n_frames, n_tracks, n_kp, 3)
-    if points3d.ndim == 3:
-        points3d_4d = points3d[:, None, :, :]
+    reproj_file = test_dir / f"{session_name}_reproj.h5"
+    errors_file = test_dir / f"{session_name}_reproj_errors.h5"
+    
+    # 1) If errors already saved, load & return
+    if errors_file.exists():
+        with h5py.File(errors_file, "r") as f_err:
+            # assume dataset "errors" of shape (n_cameras, n_frames, n_kp)
+            errors = f_err["errors"][:]
     else:
-        points3d_4d = points3d
-    n_frames = points3d_4d.shape[0]
-    
-    # Load calibration
-    if session_name.split("_")[1] == "2025":
-        calib_file = config.calibration / "calibration_2025_03_12_11_45.toml"
-    else:
-        calib_file = aniposeTools.get_most_recent_calib(session_name)
-    
-    # Triangulate (reproject)
-    reproj_file = Path(test_dir) / f"{session_name}_reproj_temp.h5"
-    slap.reproject(
-        p3d=points3d_4d,
-        calib=str(calib_file),
-        frames=(0, n_frames),
-        fname=str(reproj_file),
-    )
-    
-    # Load reprojections
-    reproj = []
-    with h5py.File(reproj_file, "r") as f:
-        for cam in cameras:
-            arr = f[cam][:]
-            # Squeeze any extra singleton dims before last two
-            while arr.ndim > 3 and 1 in arr.shape[:-2]:
-                arr = arr.squeeze(axis=arr.shape.index(1))
-            # If dims are (n_kp, n_frames, 2), transpose
-            if arr.shape[0] == len(params.body_parts) and arr.shape[1] == n_frames:
-                arr = arr.transpose(1, 0, 2)
-            reproj.append(arr)
-    
-    # Compute errors
-    errors = []
-    for i, cam in enumerate(cameras):
-        pred2d = preds2d[i, 0]                      # (2, n_kp, n_frames)
-        pred_xy = np.transpose(pred2d, (2, 1, 0))   # (n_frames, n_kp, 2)
-        err = np.linalg.norm(reproj[i] - pred_xy, axis=-1)  # (n_frames, n_kp)
-        errors.append(err)
-    
-    return np.stack(errors, axis=0)  # (n_cameras, n_frames, n_kp)
+        # 2) Load data
+        preds2d = load_2d_predictions(session_name, test_dir, cameras)
+        points3d = load_3d_predictions(session_name, test_dir)
+        if points3d.ndim == 3:
+            points3d = points3d[:, None, :, :]
+        n_frames = points3d.shape[0]
+        
+        # 3) Select calibration
+        parts = session_name.split("_")
+        if parts[1] == "2025" and parts[2] != "01":
+            calib_file = config.calibration / "calibration_2025_03_12_11_45.toml"
+        else:
+            calib_file = aniposeTools.get_most_recent_calib(session_name)
+        
+        # 4) Ensure reprojections exist
+        if not reproj_file.exists():
+            slap.reproject(
+                p3d=points3d,
+                calib=str(calib_file),
+                frames=(0, n_frames),
+                fname=str(reproj_file),
+            )
+        
+        # 5) Load reprojections
+        reproj = []
+        with h5py.File(reproj_file, "r") as f_reproj:
+            for cam in cameras:
+                arr = f_reproj[cam][:]
+                # squeeze extra singleton dims
+                while arr.ndim > 3 and 1 in arr.shape[:-2]:
+                    arr = arr.squeeze(axis=arr.shape.index(1))
+                # transpose if needed
+                if arr.shape[0] == len(params.body_parts) and arr.shape[1] == n_frames:
+                    arr = arr.transpose(1, 0, 2)
+                reproj.append(arr)
+        
+        # 6) Compute reprojection errors
+        errors = []
+        for i, cam in enumerate(cameras):
+            pred2d = preds2d[i, 0]                    # (2, n_kp, n_frames)
+            pred_xy = np.transpose(pred2d, (2, 1, 0)) # (n_frames, n_kp, 2)
+            err = np.linalg.norm(reproj[i] - pred_xy, axis=-1)
+            errors.append(err)
+        errors = np.stack(errors, axis=0)            # (n_cameras, n_frames, n_kp)
+        
+        # 7) Save errors for next time
+        with h5py.File(errors_file, "w") as f_err:
+            f_err.create_dataset("errors", data=errors, compression="gzip")
+    if print_stats:
+        _print_error_stats(errors, cameras)
+    return errors
 
 import math
 
@@ -288,7 +225,7 @@ def plot_reprojection_error_histograms(session_name, test_dir, bins=50):
         tuple: (fig_cam, fig_kp) Matplotlib Figure objects.
     """
     # Load errors
-    all_errors = get_reprojection_errors_array(session_name, test_dir)
+    all_errors = get_reprojection_errors(session_name, test_dir)
     cameras   = params.default_cameras
     keypoints = params.body_parts
 
@@ -352,7 +289,7 @@ def plot_reprojection_error_per_camera(session_name, test_dir, bins=50):
     Overlay reprojection‐error histograms for each camera on one plot.
     """
     # Get the errors array: shape (n_cameras, n_frames, n_keypoints)
-    errors = get_reprojection_errors_array(session_name, test_dir)
+    errors = get_reprojection_errors(session_name, test_dir)
     
     plt.figure(figsize=(8, 6))
     for i, cam in enumerate(params.default_cameras):
@@ -384,7 +321,7 @@ def plot_reprojection_error_per_keypoint(session_name, test_dir, bins=50):
     with a distinct color per keypoint.
     """
     # Get the errors array: shape (n_cameras, n_frames, n_keypoints)
-    errors = get_reprojection_errors_array(session_name, test_dir)  # (cams, frames, kps)
+    errors = get_reprojection_errors(session_name, test_dir)  # (cams, frames, kps)
     n_kp = len(params.body_parts)
 
     # Choose a qualitative colormap with enough distinct colors
@@ -437,7 +374,7 @@ def plot_keypoint_errors_by_camera(session_name, test_dir, camera, bins=50):
         matplotlib.figure.Figure: Figure with subplots per keypoint.
     """
     # Get full error array: (n_cameras, n_frames, n_keypoints)
-    all_errors = get_reprojection_errors_array(session_name, test_dir)
+    all_errors = get_reprojection_errors(session_name, test_dir)
     cameras = params.default_cameras
 
     if camera not in cameras:
@@ -935,8 +872,9 @@ def create_3d_animation_from_csv(csv_filepath, output_dir, fps=30, start_frame=N
     anim.save(str(video_path), writer="ffmpeg", fps=fps)
 
     return anim
+
 def plot_reprojection_errors(session_name, test_dir, bins=50):
-    all_errors = get_reprojection_errors_array(session_name, test_dir)
+    all_errors = get_reprojection_errors(session_name, test_dir)
     flat_errors = all_errors.flatten()
     flat_errors = flat_errors[~np.isnan(flat_errors)]
 
@@ -947,6 +885,7 @@ def plot_reprojection_errors(session_name, test_dir, bins=50):
     plt.xlabel("Error (pixels)")
     plt.ylabel("Count")
     plt.show()
+
 def create_3d_animation(points3d, session_dir, output_dir=None, fps=30, start_frame=None, end_frame=None):
     """
     Create a simplified 3D animation of pose estimation results.
@@ -1399,7 +1338,8 @@ def compute_keypoint_missing_frame_stats(csv_filepath, body_parts=None, sep=",")
     csv_filepath = Path(csv_filepath)
     df = pd.read_csv(csv_filepath, sep=sep)
     df.columns = df.columns.str.strip()
-
+    n_frames = len(df)
+    print(f"Total frames: {n_frames}")
     if body_parts is None:
         body_parts = params.body_parts
 
@@ -1904,24 +1844,6 @@ def plot_angle_histograms(csv_path, frame_start=0, frame_end=None, bins=50):
         plt.tight_layout()
         plt.show()
 
-def plot_angles_timeseries(csv_path, frame_start=0, frame_end=None):
-    """
-    Overlay all `<joint>_angle` time series over fnum (frame number).
-    """
-    df = _load_angle_df(csv_path, frame_start, frame_end)
-    angle_cols = [c for c in df.columns if c.endswith("_angle")]
-    if "fnum" not in df.columns:
-        raise KeyError("CSV must contain 'fnum' column for frame numbers.")
-    plt.figure(figsize=(10,6))
-    for col in angle_cols:
-        plt.plot(df["fnum"], df[col], label=col)
-    plt.title("Joint Angles over Time")
-    plt.xlabel("Frame number")
-    plt.ylabel("Angle (°)")
-    plt.legend(bbox_to_anchor=(1.02,1), loc="upper left")
-    plt.tight_layout()
-    plt.show()
-
 
 def plot_bodypart_autocorr_spectrum(
     csv_path,
@@ -2247,3 +2169,68 @@ def print_angle_stats_table(csv_path, frame_start=0, frame_end=None):
     stats_df = build_angle_stats_table(csv_path, frame_start, frame_end)
     # Print as Markdown for clearer console display
     print(stats_df.to_markdown(index=False))
+
+
+def plot_angles(
+    csv_path,
+    fields=None,
+    frame_start=0,
+    frame_end=None,
+    figsize=(20, 5),
+    save_path=None
+):
+    """
+    Plot specified joint angles (or all '*_angle' columns) over a frame range from a CSV file.
+
+    Args:
+        csv_path: Path to the CSV containing angle columns.
+        fields: List of column names to plot. If None, auto-selects all columns ending in '_angle'.
+        frame_start: First frame index (inclusive).
+        frame_end: One-past-last frame index. Defaults to end of CSV.
+        figsize: Figure size tuple for matplotlib.
+        save_path: If provided, save the figure to this path.
+    """
+    path = Path(csv_path)
+    df = pd.read_csv(path)
+
+    # Auto-select angle fields if not provided
+    if fields is None:
+        fields = [c for c in df.columns if c.endswith("_angle")]
+        if not fields:
+            raise ValueError("No columns ending with '_angle' found in CSV.")
+
+    # Validate requested fields
+    missing = [f for f in fields if f not in df.columns]
+    if missing:
+        raise ValueError(f"Requested fields not in CSV: {missing}")
+
+    # Determine frame_end
+    total = len(df)
+    if frame_end is None or frame_end > total:
+        frame_end = total
+
+    df_range = df.iloc[frame_start:frame_end]
+
+    # Prepare colors (at least as many as fields)
+    cmap = plt.get_cmap("tab20")
+    colors = [cmap(i % 20) for i in range(len(fields))]
+
+    # Plot
+    plt.figure(figsize=figsize)
+    for idx, field in enumerate(fields):
+        plt.plot(
+            df_range.index,
+            df_range[field],
+            color=colors[idx],
+            label=field
+        )
+
+    plt.xlabel("Frame")
+    plt.ylabel("Angle (degrees)")
+    plt.legend(fontsize="x-small", ncol=2)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path)
+
+    plt.show()
