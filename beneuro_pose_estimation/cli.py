@@ -185,12 +185,12 @@ def pose_test(
     start_frame: Optional[int] = typer.Option(
         None,
         "--start-frame", "-s",
-        help="Frame number to start from. If not specified, uses frame 0."
+        help="Frame number to start from."
     ),
     duration: Optional[int] = typer.Option(
-        10,
+        5,
         "--duration", "-d",
-        help="Duration in seconds. If not specified, uses 100 frames."
+        help="Duration in seconds."
     )
 ):
     """
@@ -201,8 +201,9 @@ def pose_test(
     if they already exist.
     """
     from beneuro_pose_estimation.anipose.aniposeTools import run_pose_test
+    from beneuro_pose_estimation.evaluation import create_interactive_3d_animation
 
-    run_pose_test(
+    test_dir = run_pose_test(
         session=session,
         test_name=test_name,
         cameras=cameras or params.default_cameras,
@@ -210,7 +211,17 @@ def pose_test(
         start_frame=start_frame,
         duration_seconds=duration,
     )
-
+    csv_path = test_dir/f"{session}_3dpts_angles.csv"
+    html_path = test_dir / f"{session}_3d_animation.html"
+    
+    create_interactive_3d_animation(
+        csv_filepath = str(csv_path),
+        output_html  = str(html_path),
+        body_parts   = params.body_parts,
+        frame_start  = None,
+        frame_end    = None,
+    )
+   
     return
 
 @app.command()

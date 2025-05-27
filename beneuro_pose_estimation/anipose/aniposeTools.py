@@ -758,9 +758,10 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         logger.info("Creating test videos...")
         tests_dir = tools.create_test_videos(session, cameras, duration_seconds, 
                                     force_new=force_new_videos, start_frame=start_frame)
-        test_dir = tests_dir / test_name
+        
         if test_name is None:
             test_name = session + "_test"
+        test_dir = tests_dir / test_name
         # 2. Run 2D predictions on test videos
         logger.info("Running 2D predictions...")
         sleapTools.get_2Dpredictions(session, cameras, test_name = test_name)
@@ -822,6 +823,10 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
                 except Exception as e:
                     logger.error(f"Error deleting {tri_file}: {e}")
         logging.info(f"Pose estimation completed for {session}.")
+        return test_dir
+
+        
+        
 
     except Exception as e:
         logger.error(f"Error in pose test for {session}: {e}")
