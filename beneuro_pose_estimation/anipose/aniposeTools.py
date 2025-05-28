@@ -129,21 +129,15 @@ def get_most_recent_calib(session):
     logging.info(
         f"Using calibration folder: {recent_calib_folder} for session {session}"
     )
+    
 
     # Generate calibration file path
     calib_file_name = Path(
         f"calibration_{calib_datetime.strftime('%Y_%m_%d_%H_%M')}.toml"
     )
     calib_file_path = config.calibration / calib_file_name
-    # logging.debug(str(calib_file_path))
-    # Create calibration configuration if it doesn't exist
-    if not calib_file_path.exists():
-        get_calib_file(recent_calib_folder, calib_file_path)
-        logging.info(f"Created new calibration file: {calib_file_path}")
-    else:
-        logging.info(f"Calibration file already exists: {calib_file_path}")
+    return recent_calib_folder, calib_file_path
 
-    return calib_file_path
 
 
 def get_calib_file(calib_videos_dir, calib_save_path = None):
@@ -183,6 +177,7 @@ def get_calib_file(calib_videos_dir, calib_save_path = None):
     if calib_save_path is None:
         calib_save_path = config.calibration / "calibration.toml"
     # Initialize and configure CharucoBoard and CameraGroup
+    calib_save_path.parent.mkdir(parents=True, exist_ok=True)  
     cgroup = CameraGroup.from_names(cam_names, fisheye=params.fisheye)
 
     cgroup.calibrate_videos(vidnames, board)
@@ -721,7 +716,7 @@ def run_pose_estimation(
 
         # Combine pose data and angles data
         combined_data = pd.concat([pose_data, angles_data], axis=1)
-        combined_csv = predictions_dir/f"{session}_3dpts_angles_interpolated.csv"
+        combined_csv = predictions_dir/f"{session}_3dpts_angles.csv"
         # Save the updated CSV
         combined_data.to_csv(combined_csv, index=False)
         logging.info(f"Angles computed and combined CSV saved at {combined_csv}.")
@@ -773,9 +768,16 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         
 
         if session.split("_")[1] == "2025" and session.split("_")[2] != "01": # TODO: set the condition so that sessions after 3rd of february 2025 use this
+            recent_calib_folder = config.REMOTE_PATH/ "raw"/ "pose-estimation"/ "calibration-videos"/ "camera_calibration_2025_03_12_11_45" / "Recording_2025-03-12T114830"
             calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
         else:
-            calib_file_path = get_most_recent_calib(session)
+            recent_calib_folder, calib_file_path = get_most_recent_calib(session)
+
+        if not calib_file_path.exists():
+            get_calib_file(recent_calib_folder, calib_file_path)
+            logging.info(f"Created new calibration file: {calib_file_path}")
+        else:
+            logging.info(f"Calibration file already exists: {calib_file_path}")
         
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = test_dir, output_dir=test_dir, eval=False

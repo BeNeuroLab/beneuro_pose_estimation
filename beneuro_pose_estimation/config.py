@@ -95,7 +95,7 @@ class Config:
         self.training_config = self.REPO_PATH / "beneuro_pose_estimation"/ "training_config.json"
         self.predictions3D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.calibration_videos = self.REMOTE_PATH / "raw" / "calibration_videos"
-        self.calibration = self.LOCAL_PATH / "raw"/ "pose-estimation"/ "calibration_config"
+        self.calibration = self.REMOTE_PATH / "raw"/ "pose-estimation"/ "calibration_config"
         self.angles_config = self.REPO_PATH / "beneuro_pose_estimation"
         return
 
