@@ -666,7 +666,7 @@ def run_pose_estimation(
         logging.info(f"Running pose estimation on {session}")
         animal = session.split("_")[0]
         session_dir = config.predictions3D / animal / session ############
-        predictions_dir = session_dir / "pose-estimation" # TODO change to pose_estimation
+        predictions_dir = session_dir / f"{session}_pose_estimation" # TODO change to pose_estimation
         predictions_dir.mkdir(parents=True, exist_ok=True)
         
 
