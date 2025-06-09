@@ -725,9 +725,9 @@ def get_2Dpredictions(
         for session in sessions:
             animal = session.split("_")[0]
             if test_name is not None:
-                predictions_dir = config.predictions2D / animal / session / "pose-estimation" / "tests" / test_name 
+                predictions_dir = config.predictions2D / animal / session / f"{session}_pose_estimation"/ "tests" / test_name 
             else:
-                predictions_dir = config.predictions2D / animal / session / "pose-estimation" 
+                predictions_dir = config.predictions2D / animal / session / f"{session}_pose_estimation"
             predictions_dir.mkdir(parents=True, exist_ok=True)
             for camera in cameras:  
                 try:
@@ -830,11 +830,11 @@ def visualize_predictions(sessions, cameras=params.default_cameras):
             if "test" in session:
                 session_name = session.split("_")[0]+"_"+session.split("_")[1]+"_"+session.split("_")[2]+"_"+session.split("_")[3]+session.split("_")[4]+session.split("_")[5]
                 predictions_path = (
-                    config.predictions2D/animal/session_name/"pose-estimation"/"tests"/session/"pose-estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
+                    config.predictions2D/animal/session_name/f"{session_name}_pose_estimation"/"tests"/session/f"{session}_pose_estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
                 )
             else:
                 predictions_path = (
-                    config.predictions2D/animal/session/"pose-estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
+                    config.predictions2D/animal/session/f"{session}_pose_estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
                 )
                 subprocess.run(["sleap-label", predictions_path])
     return
