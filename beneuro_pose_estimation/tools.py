@@ -55,7 +55,7 @@ def cleanup_intermediate_files(session: str):
     2) Prompt to delete the entire 'tests' directory under project_dir, uses shutil.rmtree.
     """
     animal = session.split("_")[0]
-    project_dir = config.predictions3D / animal / session / "pose-estimation"
+    project_dir = config.predictions3D / animal / session / f"{session}_pose_estimation"
 
     if not project_dir.exists():
         logger.error(f"Project directory not found: {project_dir}")
@@ -112,7 +112,7 @@ def create_test_videos(session, cameras=params.default_cameras, duration_seconds
     n_frames = duration_seconds * fps 
     
     # Create output directory for test videos
-    test_dir = config.LOCAL_PATH /"raw" / animal / session / "pose-estimation"/ "tests" 
+    test_dir = config.LOCAL_PATH /"raw" / animal / session / f"{session}_pose_estimation"/ "tests" 
     
   
     cameras_dir = test_dir / f"{session}_cameras"

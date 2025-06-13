@@ -741,20 +741,20 @@ def get_2Dpredictions(
                             f"Predictions file for {session} and camera {camera} already exists, skipping."
                         )
                         continue
-                    input_file = (
-                        config.recordings
-                        / animal
-                        / session
-                        / f"{session}_cameras"
-                        # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-                        / f"{params.camera_name_mapping.get(camera, camera)}.avi"
-                    )
                     # input_file = (
-                    #     predictions_dir.parent
+                    #     config.recordings
+                    #     / animal
+                    #     / session
                     #     / f"{session}_cameras"
                     #     # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
                     #     / f"{params.camera_name_mapping.get(camera, camera)}.avi"
                     # )
+                    input_file = (
+                        predictions_dir.parent
+                        / f"{session}_cameras"
+                        # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                        / f"{params.camera_name_mapping.get(camera, camera)}.avi"
+                    )
                     if custom_model_name is not None:
                         
                         model_dir = config.custom_models / camera / f"{camera}_{custom_model_name}"
