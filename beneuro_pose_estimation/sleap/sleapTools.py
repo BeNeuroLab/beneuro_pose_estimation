@@ -605,7 +605,7 @@ def train_models(cameras=params.default_cameras, custom_labels = False):
         labels_file = config.training / camera / f"{camera}.pkg.slp"
         config_file = config.training_config
 
-        # Check if the .slp file exists; if not, run create_training_file
+        # Check if the .slp file exists;
         if not labels_file.exists():
             logging.info(f"{labels_file} does not exist")
             return 
@@ -725,9 +725,9 @@ def get_2Dpredictions(
         for session in sessions:
             animal = session.split("_")[0]
             if test_name is not None:
-                predictions_dir = config.predictions2D / animal / session / "pose-estimation" / "tests" / test_name 
+                predictions_dir = config.predictions2D / animal / session / f"{session}_pose_estimation"/ "tests" / test_name 
             else:
-                predictions_dir = config.predictions2D / animal / session / "pose-estimation" 
+                predictions_dir = config.predictions2D / animal / session / f"{session}_pose_estimation"
             predictions_dir.mkdir(parents=True, exist_ok=True)
             for camera in cameras:  
                 try:
@@ -741,20 +741,20 @@ def get_2Dpredictions(
                             f"Predictions file for {session} and camera {camera} already exists, skipping."
                         )
                         continue
-                    # input_file = (
-                    #     config.recordings
-                    #     / animal
-                    #     / session
-                    #     / f"{session}_cameras"
-                    #     # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
-                    #     / f"{params.camera_name_mapping.get(camera, camera)}.avi"
-                    # )
                     input_file = (
-                        predictions_dir.parent
+                        config.recordings
+                        / animal
+                        / session
                         / f"{session}_cameras"
                         # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
                         / f"{params.camera_name_mapping.get(camera, camera)}.avi"
                     )
+                    # input_file = (
+                    #     predictions_dir.parent
+                    #     / f"{session}_cameras"
+                    #     # / f"{session}_{params.camera_name_mapping.get(camera, camera)}.avi"
+                    #     / f"{params.camera_name_mapping.get(camera, camera)}.avi"
+                    # )
                     if custom_model_name is not None:
                         
                         model_dir = config.custom_models / camera / f"{camera}_{custom_model_name}"
@@ -830,11 +830,11 @@ def visualize_predictions(sessions, cameras=params.default_cameras):
             if "test" in session:
                 session_name = session.split("_")[0]+"_"+session.split("_")[1]+"_"+session.split("_")[2]+"_"+session.split("_")[3]+session.split("_")[4]+session.split("_")[5]
                 predictions_path = (
-                    config.predictions2D/animal/session_name/"pose-estimation"/"tests"/session/"pose-estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
+                    config.predictions2D/animal/session_name/f"{session_name}_pose_estimation"/"tests"/session/f"{session}_pose_estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
                 )
             else:
                 predictions_path = (
-                    config.predictions2D/animal/session/"pose-estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
+                    config.predictions2D/animal/session/f"{session}_pose_estimation"/camera/ f"{session}_{camera}.slp.predictions.slp"
                 )
                 subprocess.run(["sleap-label", predictions_path])
     return
