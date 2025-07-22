@@ -341,6 +341,10 @@ def create_annotation_project(session, camera, pred):
                 str(model_path),
                 "-o",
                 str(labels_output_path),
+                "--max_instances",
+                "1",
+                # "--tracking.tracker",
+                # "simple"
             ]
         logging.info("Running sleap-track on annotation video")
         # Run the sleap-track command using subprocess
@@ -668,6 +672,7 @@ def get_2Dpredictions(
     -------
 
     """
+    
     if test_name is not None:
         custom_model_name = test_name
     logging.info("Running get_2Dpredictions...")
@@ -703,6 +708,10 @@ def get_2Dpredictions(
                 model_path,
                 "-o",
                 output_file,
+                "--max_instances",
+                "1",
+                # "--tracking.tracker",
+                # "simple"
             ]
 
             # Add frames to predict on if specified - otherwise all frames
@@ -791,6 +800,11 @@ def get_2Dpredictions(
                         model_path,
                         "-o",
                         output_file,
+                        "--max_instances", ##
+                        "1",
+                        # "--tracking.tracker", ##
+                        # "simple"
+                        
                     ]
 
                     # Add frames to predict on if specified - otherwise all frames
