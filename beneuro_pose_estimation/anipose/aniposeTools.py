@@ -277,6 +277,7 @@ def compute_3Dpredictions(
             reproj_error_threshold=params.triangulation_params[
                 "reproj_error_threshold"
             ],
+            # excluded_views="Camera_Back_Right",
             reproj_loss=params.triangulation_params["reproj_loss"],
             n_deriv_smooth=params.triangulation_params["n_deriv_smooth"],
         )
@@ -648,6 +649,17 @@ def pad_and_interp_analysis_h5_dynamic(
         np.save(cam_out/f"{cam_code}_interp_idxs.npy", interp_idxs)
 
         print(f"[{cam_code}] → {out_h5}  (interpolated {len(interp_idxs)} slots)")
+def session_datetime(session: str) -> datetime:
+    """
+    Expected format: M0XX_year_month_day_hour_minute
+    Example: M063_2025_03_21_14_00
+    """
+    parts = session.split("_")
+    if len(parts) != 6:
+        raise ValueError(f"Unexpected session format: {session!r}")
+
+    _, y, m, d, hh, mm = parts
+    return datetime(int(y), int(m), int(d), int(hh), int(mm))
 
 def run_pose_estimation(
     sessions,
@@ -675,23 +687,43 @@ def run_pose_estimation(
 
         # convert 2D predictions to h5 files - h5 files saved in predictions2D/animal/session/predictions
         convert_2Dpred_to_h5(session,input_dir=predictions_dir, output_dir=predictions_dir) 
-        
-        pad_and_interp_analysis_h5_dynamic(
-          csv_path    = config.recordings
-                        / animal
-                        / session
-                        / f"{session}_cameras"
-                        / "metadata.csv",
-          in_root  = predictions_dir,
-          out_root = predictions_dir,
-        )
+        metadata_path = config.recordings/animal/session/ f"{session}_cameras"/ "metadata.csv"
+
+        try: 
+            pad_and_interp_analysis_h5_dynamic(
+            csv_path    = metadata_path,
+            in_root  = predictions_dir,
+            out_root = predictions_dir,
+            )
+        except Exception as e:
+            logger.error(f"Skipping frame alignment, {e}")
+
         ###############################################
 
-        # get calibration file - toml file saved in calibration/calibration.toml
-        if session.split("_")[1] == "2025": # TODO: set the condition so that sessions after 3rd of february 2025 use this
-            calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
+        from datetime import datetime
+
+
+
+
+        dt = session_datetime(session)
+
+        # Cut-offs 
+        AFTER_3_FEB_2025 = datetime(2025, 2, 3, 0, 0)   
+        AFTER_11_NOV_2025 = datetime(2025, 11, 11, 0, 0)   
+
+        if dt >= AFTER_11_NOV_2025:
+            calib_file_path = config.calibration / "calibration_2025_11_11_17_00.toml"
+        elif dt >= AFTER_3_FEB_2025:
+            calib_file_path = config.calibration / "calibration_2025_03_12_11_45.toml"
         else:
             calib_file_path = get_most_recent_calib(session)
+
+        # TO DO: get calibration file if it doesn't exist
+        # # get calibration file - toml file saved in calibration/calibration.toml
+        # if session.split("_")[1] == "2025": # TODO: set the condition so that sessions after 3rd of february 2025 use this
+        #     calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
+        # else:
+        #     calib_file_path = get_most_recent_calib(session)
         
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = predictions_dir, output_dir=predictions_dir, eval=eval
@@ -765,19 +797,31 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         logger.info("Converting predictions to h5 format...")
         convert_2Dpred_to_h5(session, cameras, input_dir=test_dir, output_dir=test_dir)
         
-        
+        dt = session_datetime(session)
 
-        if session.split("_")[1] == "2025" and session.split("_")[2] != "01": # TODO: set the condition so that sessions after 3rd of february 2025 use this
-            recent_calib_folder = config.REMOTE_PATH/ "raw"/ "pose-estimation"/ "calibration-videos"/ "camera_calibration_2025_03_12_11_45" / "Recording_2025-03-12T114830"
-            calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
-        else:
-            recent_calib_folder, calib_file_path = get_most_recent_calib(session)
+        # Cut-offs 
+        AFTER_3_FEB_2025 = datetime(2025, 2, 3, 0, 0)   
+        AFTER_11_NOV_2025 = datetime(2025, 11, 11, 0, 0)   
 
-        if not calib_file_path.exists():
-            get_calib_file(recent_calib_folder, calib_file_path)
-            logging.info(f"Created new calibration file: {calib_file_path}")
+        if dt >= AFTER_11_NOV_2025:
+            calib_file_path = config.calibration / "calibration_2025_11_11_17_00.toml"
+        elif dt >= AFTER_3_FEB_2025:
+            calib_file_path = config.calibration / "calibration_2025_03_12_11_45.toml"
         else:
-            logging.info(f"Calibration file already exists: {calib_file_path}")
+            calib_file_path = get_most_recent_calib(session)
+
+        # TO DO: get calibration file if it doesn't exist
+        # if session.split("_")[1] == "2025" and session.split("_")[2] != "01": # TODO: set the condition so that sessions after 3rd of february 2025 use this
+        #     recent_calib_folder = config.REMOTE_PATH/ "raw"/ "pose-estimation"/ "calibration-videos"/ "camera_calibration_2025_03_12_11_45" / "Recording_2025-03-12T114830"
+        #     calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
+        # else:
+        #     recent_calib_folder, calib_file_path = get_most_recent_calib(session)
+
+        # if not calib_file_path.exists():
+        #     get_calib_file(recent_calib_folder, calib_file_path) 
+        #     logging.info(f"Created new calibration file: {calib_file_path}")
+        # else:
+        #     logging.info(f"Calibration file already exists: {calib_file_path}")
         
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = test_dir, output_dir=test_dir, eval=False
