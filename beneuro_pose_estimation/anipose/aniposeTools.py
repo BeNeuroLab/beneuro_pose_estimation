@@ -579,6 +579,13 @@ def pad_and_interp_analysis_h5_dynamic(
             print(f"[WARN] no folder mapping for '{cam_code}', skip")
             continue
 
+        cam_out = out_root / folder
+        interp_npy = cam_out / f"{cam_code}_interp_idxs.npy"
+
+        if interp_npy.exists():
+            print(f"[{cam_code}] found {interp_npy.name} → skipping (already interpolated)")
+            continue
+
         # isolate & sort
         sub = (
             df[df["frame_camera_name"] == cam_code]
@@ -638,7 +645,6 @@ def pad_and_interp_analysis_h5_dynamic(
                 tracks[0,d,node] = np.interp(x_all, x_valid, y)
 
         # write padded+interpolated H5
-        cam_out = out_root/folder
         cam_out.mkdir(parents=True, exist_ok=True)
         out_h5 = cam_out/cam_in.name
         with h5py.File(out_h5,"w") as dst:
@@ -646,7 +652,7 @@ def pad_and_interp_analysis_h5_dynamic(
             dst.create_dataset("point_scores", data=scores, compression="gzip")
 
         # save interpolated slot indices
-        np.save(cam_out/f"{cam_code}_interp_idxs.npy", interp_idxs)
+        np.save(interp_npy, interp_idxs)
 
         print(f"[{cam_code}] → {out_h5}  (interpolated {len(interp_idxs)} slots)")
 def session_datetime(session: str) -> datetime:
