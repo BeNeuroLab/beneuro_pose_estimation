@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 
 import typer
 from typing import List, Optional
@@ -127,6 +128,42 @@ def cleanup(
     return
 
 
+@app.command()
+def new_calib(
+    calib_folder_name: Optional[str] = typer.Argument(
+        None,
+        help="Name of the calibration video folder in config.calibration_videos (e.g., 'camera_calibration_2026_05_21_18_50'). If omitted, uses the most recent folder."
+    ),
+    start_date: Optional[str] = typer.Option(
+        None,
+        "--start-date", "-d",
+        help="Date when this calibration becomes valid (YYYY-MM-DD format). If omitted, extracted from folder name."
+    ),
+):
+    """
+    Register and generate a new calibration file from ChArUco board videos.
+    
+    """
+    from beneuro_pose_estimation.anipose.aniposeTools import new_calib as new_calib_impl
+    
+    try:
+        calib_id = new_calib_impl(calib_folder_name, start_date)
+        print(f"Calibration registered successfully!")
+    except FileNotFoundError as e:
+        print(f"[red]{e}")
+        raise typer.Exit(code=1)
+    except FileExistsError as e:
+        print(f"[red]{e}")
+        raise typer.Exit(code=1)
+    except ValueError as e:
+        print(f"[red]{e}")
+        raise typer.Exit(code=1)
+    except Exception as e:
+        print(f"[red]Error: {e}")
+        raise typer.Exit(code=1)
+    
+    return
+
 
 @app.command()
 def model_up(
@@ -247,6 +284,7 @@ def train(
 
     cams = cameras or params.default_cameras
     train_models(cameras=cams, custom_labels=custom_labels)
+
 # =================================== Updating ==========================================
 
 

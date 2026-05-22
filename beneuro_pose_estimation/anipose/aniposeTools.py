@@ -35,12 +35,207 @@ import sleap_anipose as slap
 import toml
 from anipose.compute_angles import compute_angles
 from aniposelib.cameras import CameraGroup
+from typing import Optional
 from beneuro_pose_estimation import params, set_logging
 from beneuro_pose_estimation.config import _load_config
+from beneuro_pose_estimation.tools import (
+    get_calib_for_session,
+    _ensure_calib_file_local,
+)
 
 config = _load_config()
 
 logger = set_logging(__name__)
+
+def get_calib_file(calib_videos_dir: Path, calib_save_path: Optional[Path] = None) -> Path:
+    """
+    Gets or generates calibration file using ChArUco board videos with local/remote sync.
+    
+    Process:
+    1. Derives expected calibration file name
+    2. Checks if calibration exists on remote - if yes, raises error
+    3. Checks local cache - if exists, returns it
+    4. If not found anywhere, generates new calibration file from videos
+    5. Saves locally and syncs to remote
+
+    Parameters
+    ----------
+    calib_videos_dir : Path
+        Directory path containing ChArUco videos for calibration
+    calib_save_path : Path, optional
+        Explicit path to save the calibration file. If None, derives from folder name.
+
+    Returns
+    -------
+    Path
+        Path to the calibration file (local copy)
+    
+    Raises
+    ------
+    FileExistsError
+        If calibration file already exists on remote
+    """
+    # Determine calibration file name
+    if calib_save_path is None:
+        # Extract date from folder name (format: camera_calibration_YYYY_MM_DD_HH_MM)
+        try:
+            date_part = "_".join(calib_videos_dir.name.split("_")[2:])
+            calib_file_name = f"calibration_{date_part}.toml"
+        except Exception:
+            calib_file_name = "calibration.toml"
+    else:
+        calib_file_name = calib_save_path.name if isinstance(calib_save_path, Path) else Path(calib_save_path).name
+    
+  
+    # 2. Check if already in local cache
+    if calib_save_path.exists():
+        logger.info(f"Calibration already exists: {calib_save_path}")
+        # Try to copy to remote if not already there
+        
+        return logger.info
+    
+    # 3. Generate new calibration file
+    logger.info(f"Generating new calibration file from videos in {calib_videos_dir}...")
+    board = params.board
+
+    video_files = list(calib_videos_dir.iterdir())
+    cam_names, vidnames = [], []
+    reversed_mapping = {v: k for k, v in params.camera_name_mapping.items()}
+    for video_file in video_files:
+        if video_file.suffix in [".avi", ".mp4"]:  # Check file extension
+            camera = video_file.stem
+            if camera == "Camera_3":
+                continue
+            cam_name = reversed_mapping.get(camera, camera)
+            vidnames.append([str(video_file)])  # Convert to str if required by downstream methods
+            cam_names.append(cam_name)
+
+    # Save to local repo first
+    calib_save_path.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize and configure CharucoBoard and CameraGroup
+    cgroup = CameraGroup.from_names(cam_names, fisheye=params.fisheye)
+    cgroup.calibrate_videos(vidnames, board)
+    cgroup.dump(calib_save_path)
+    logger.info(f"Calibration file generated and saved locally: {calib_save_path}")
+
+    
+    
+    return calib_save_path
+
+def new_calib(calib_folder_name: str = None, start_date: str = None) -> str:
+    """
+    Creates a new calibration registration.
+    
+    Process:
+    1. Resolves calibration folder (uses most recent if not specified)
+    2. Extracts/validates start date
+    3. Gets or generates calibration file (checks remote first, regenerates if needed)
+    4. Registers in calibration registry with remote sync
+    
+    Parameters
+    ----------
+    calib_folder_name : str, optional
+        Name of calibration video folder. If None, uses most recent.
+    start_date : str, optional
+        Date when calibration becomes valid (YYYY-MM-DD). If None, extracts from folder name.
+    
+    Returns
+    -------
+    str
+        The calibration ID (e.g., "calibration_2026_05_21")
+    
+    Raises
+    ------
+    Exception
+        If folder not found, date cannot be extracted, or other errors occur
+    """
+    from beneuro_pose_estimation.tools import (
+        _register_calibration,_copy_file_to_remote
+    )
+    
+    # Resolve calibration folder
+    if calib_folder_name is None:
+        # Find most recent folder in config.calibration_videos
+        try:
+            calib_videos_dir = config.calibration_videos
+            all_folders = [f for f in calib_videos_dir.iterdir() if f.is_dir()]
+            if not all_folders:
+                raise FileNotFoundError(f"No calibration video folders found in {calib_videos_dir}")
+            # Sort by name (which includes timestamp) in descending order
+            calib_folder = max(all_folders, key=lambda x: x.name)
+            calib_folder_name = calib_folder.name
+            logger.info(f"Using most recent calibration folder: {calib_folder_name}")
+        except Exception as e:
+            logger.error(f"Error finding calibration folders: {e}")
+            raise
+    else:
+        calib_folder = config.calibration_videos / calib_folder_name
+    
+    # Validate folder exists
+    if not calib_folder.exists():
+        raise FileNotFoundError(f"Calibration folder not found: {calib_folder}")
+    
+    # Resolve start date
+    if start_date is None:
+        # Extract date from folder name (format: camera_calibration_YYYY_MM_DD_HH_MM)
+        try:
+            date_part = "_".join(calib_folder_name.split("_")[2:])
+            parsed_datetime = datetime.strptime(date_part, "%Y_%m_%d_%H_%M")
+            start_date = parsed_datetime.strftime("%Y-%m-%d")
+            logger.info(f"Extracted start date from folder: {start_date}")
+        except (ValueError, IndexError) as e:
+            raise ValueError(
+                f"Could not extract date from folder name '{calib_folder_name}': {e}. "
+                f"Please provide start date with --start-date flag (YYYY-MM-DD format)"
+            )
+    else:
+        # Validate date format
+        try:
+            datetime.strptime(start_date, "%Y-%m-%d")
+            logger.info(f"Using provided start date: {start_date}")
+        except ValueError:
+            raise ValueError(f"Invalid date format: {start_date}. Use YYYY-MM-DD format.")
+    
+    # Check if calibration file already exists on remote (before attempting to create)
+    try:
+        date_part = "_".join(calib_folder_name.split("_")[2:])
+        calib_file_name = f"calibration_{date_part}.toml"
+    except Exception:
+        calib_file_name = "calibration.toml"
+    
+    remote_calib_path = config.calibration / calib_file_name
+    if remote_calib_path.exists():
+        logger.info(
+            f"Calibration file already exists on remote: {remote_calib_path}. "
+           
+        )
+    else:
+        calib_path = get_calib_file(calib_folder,calib_save_path=config.calibration_local / calib_file_name)
+
+        if not _copy_file_to_remote(calib_path, remote_calib_path):
+            logger.warning(
+                f"[bold yellow]Could not copy calibration to remote ({remote_calib_path}). "
+                f"Local copy available at {calib_path}[/bold yellow]"
+            )
+
+    
+    # # Get or generate calibration file (checks local first, generates if needed)
+    # logger.info(f"Getting calibration file from videos in {calib_folder}...") 
+
+    logger.info(f"Calibration file ready: {calib_path.name}")
+    
+    # if not calib_path.exists():
+    #     raise FileNotFoundError(f"Calibration file not found: {local_calib_path}")
+    
+    # Register in calibration registry (with remote sync)
+    logger.info(f"Registering calibration with start_date={start_date}...")
+    calib_id = _register_calibration(calib_folder_name, start_date, calib_path)
+    logger.info(f"Calibration registered successfully: {calib_id}")
+    
+    return calib_id
+
+
 
 
 def evaluate_reprojection(reprojection_path, predictions_2D_dir, histogram_path=None):
@@ -139,53 +334,6 @@ def get_most_recent_calib(session):
     return recent_calib_folder, calib_file_path
 
 
-
-def get_calib_file(calib_videos_dir, calib_save_path = None):
-    """
-    Generates calibration file using ChArUco board videos. - get most recent calibration
-
-    Parameters
-    ----------
-
-    calib_videos_dir : str
-        Directory path containing ChArUco videos for calibration
-    calib_save_path : str
-        Path to save the calibration file
-    board : CharucoBoard
-        Configuration of the ChArUco board.
-
-    -------
-
-    """
-    board = params.board
-
-    # calib_videos_dir = next(
-    #     calib_videos_dir.iterdir(), None
-    # )  # might want to change this
-    video_files = list(calib_videos_dir.iterdir())
-    cam_names, vidnames = [], []
-    reversed_mapping = {v: k for k, v in params.camera_name_mapping.items()}
-    for video_file in video_files:
-        if video_file.suffix in [".avi", ".mp4"]:  # Check file extension
-            camera = video_file.stem
-            if camera == "Camera_3":
-                continue
-            cam_name = reversed_mapping.get(camera, camera)
-            vidnames.append([str(video_file)])  # Convert to str if required by downstream methods
-            cam_names.append(cam_name)
-
-    if calib_save_path is None:
-        calib_save_path = config.calibration / "calibration.toml"
-    # Initialize and configure CharucoBoard and CameraGroup
-    calib_save_path.parent.mkdir(parents=True, exist_ok=True)  
-    cgroup = CameraGroup.from_names(cam_names, fisheye=params.fisheye)
-
-    cgroup.calibrate_videos(vidnames, board)
-    cgroup.dump(calib_save_path)
-    logging.info(f"Calibration file saved at {calib_save_path}")
-    return
-
-
 def convert_2Dpred_to_h5(
     sessions,
     cameras=params.default_cameras,
@@ -242,9 +390,10 @@ def compute_3Dpredictions(
     # )
     frame_counts = []
     for cam in params.default_cameras:
-        file_path = f"{pred_dir}/{cam}/{session}_{cam}.analysis.h5"
-        count = get_frame_count(file_path)
-        frame_counts.append(count)
+        file_path = Path(f"{pred_dir}/{cam}/{session}_{cam}.analysis.h5")
+        if file_path.exists():
+            count = get_frame_count(file_path)
+            frame_counts.append(count)
         
     # Check that all frame counts are consistent
     if len(set(frame_counts)) != 1:
@@ -277,7 +426,7 @@ def compute_3Dpredictions(
             reproj_error_threshold=params.triangulation_params[
                 "reproj_error_threshold"
             ],
-            # excluded_views="Camera_Back_Right",
+            # excluded_views=["Camera_6"],
             reproj_loss=params.triangulation_params["reproj_loss"],
             n_deriv_smooth=params.triangulation_params["n_deriv_smooth"],
         )
@@ -706,33 +855,24 @@ def run_pose_estimation(
 
         ###############################################
 
-        from datetime import datetime
-
-
-
-
-        dt = session_datetime(session)
-
-        # Cut-offs 
-        AFTER_3_FEB_2025 = datetime(2025, 2, 3, 0, 0)   
-        AFTER_11_NOV_2025 = datetime(2025, 11, 11, 0, 0)   
-
-        if dt >= AFTER_11_NOV_2025:
-            calib_file_path = config.calibration / "calibration_2025_11_11_17_00.toml"
-        elif dt >= AFTER_3_FEB_2025:
-            calib_file_path = config.calibration / "calibration_2025_03_12_11_45.toml"
-        else:
-            calib_file_path = get_most_recent_calib(session)
-
-        # TO DO: get calibration file if it doesn't exist
-        # # get calibration file - toml file saved in calibration/calibration.toml
-        # if session.split("_")[1] == "2025": # TODO: set the condition so that sessions after 3rd of february 2025 use this
-        #     calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
-        # else:
-        #     calib_file_path = get_most_recent_calib(session)
+        # Get calibration file for this session using the registry
+        calib_file_path = get_calib_for_session(session)
         
+        if calib_file_path is None:
+            logging.error(
+                f"Could not find calibration file for session {session}. "
+                f"Please register a calibration using: bnp new-calib"
+            )
+            raise ValueError(f"No calibration found for session {session}")
+        
+        logging.info(f"Found calibration file: {calib_file_path}")
+        
+        # Ensure calibration file is available locally (download if needed)
+        local_calib_path = _ensure_calib_file_local(calib_file_path)
+        logging.info(f"Using local calibration copy: {local_calib_path} for triangulation")
+            
         compute_3Dpredictions(
-            session, calib_file_path=calib_file_path, pred_dir = predictions_dir, output_dir=predictions_dir, eval=eval
+            session, calib_file_path=local_calib_path, pred_dir=predictions_dir, output_dir=predictions_dir, eval=eval
         )
         labels_fname = predictions_dir/f"{session}_3dpts.csv"
         save_to_csv(
@@ -803,31 +943,17 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         logger.info("Converting predictions to h5 format...")
         convert_2Dpred_to_h5(session, cameras, input_dir=test_dir, output_dir=test_dir)
         
-        dt = session_datetime(session)
-
-        # Cut-offs 
-        AFTER_3_FEB_2025 = datetime(2025, 2, 3, 0, 0)   
-        AFTER_11_NOV_2025 = datetime(2025, 11, 11, 0, 0)   
-
-        if dt >= AFTER_11_NOV_2025:
-            calib_file_path = config.calibration / "calibration_2025_11_11_17_00.toml"
-        elif dt >= AFTER_3_FEB_2025:
-            calib_file_path = config.calibration / "calibration_2025_03_12_11_45.toml"
-        else:
-            calib_file_path = get_most_recent_calib(session)
-
-        # TO DO: get calibration file if it doesn't exist
-        # if session.split("_")[1] == "2025" and session.split("_")[2] != "01": # TODO: set the condition so that sessions after 3rd of february 2025 use this
-        #     recent_calib_folder = config.REMOTE_PATH/ "raw"/ "pose-estimation"/ "calibration-videos"/ "camera_calibration_2025_03_12_11_45" / "Recording_2025-03-12T114830"
-        #     calib_file_path = config.calibration/"calibration_2025_03_12_11_45.toml"
-        # else:
-        #     recent_calib_folder, calib_file_path = get_most_recent_calib(session)
-
-        # if not calib_file_path.exists():
-        #     get_calib_file(recent_calib_folder, calib_file_path) 
-        #     logging.info(f"Created new calibration file: {calib_file_path}")
-        # else:
-        #     logging.info(f"Calibration file already exists: {calib_file_path}")
+        # Get calibration file for this session using the registry
+        calib_file_path = get_calib_for_session(session)
+        
+        if calib_file_path is None:
+            logging.error(
+                f"Could not find calibration file for session {session}. "
+                f"Please register a calibration using: bnp new-calib"
+            )
+            raise ValueError(f"No calibration found for session {session}")
+        
+        logging.info(f"Using calibration file: {calib_file_path} for session {session}")
         
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = test_dir, output_dir=test_dir, eval=False

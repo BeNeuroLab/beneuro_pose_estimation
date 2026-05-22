@@ -92,11 +92,13 @@ class Config:
         # self.recordings = self.annotation_party 
         self.predictions2D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.training = self.annotation_party / "training"
-        self.training_config = self.REPO_PATH / "beneuro_pose_estimation"/ "training_config.json"
+        self.training_config = self.REPO_PATH / "beneuro_pose_estimation" / "sleap" / "training_config.json"
         self.predictions3D = self.LOCAL_PATH / "raw" # change to 'processed'?
-        self.calibration_videos = self.REMOTE_PATH / "raw" / "calibration_videos"
+        self.calibration_videos = self.REMOTE_PATH / "raw" / "pose-estimation" / "calibration-videos"
         self.calibration = self.REMOTE_PATH / "raw"/ "pose-estimation"/ "calibration_config"
-        self.angles_config = self.REPO_PATH / "beneuro_pose_estimation"
+        self.calibration_local = self.REPO_PATH / "beneuro_pose_estimation" / "anipose"  
+        self.calibration_registry = self.calibration / "calibration_registry.toml"
+        self.angles_config = self.REPO_PATH / "beneuro_pose_estimation" / "anipose"
         return
 
 
