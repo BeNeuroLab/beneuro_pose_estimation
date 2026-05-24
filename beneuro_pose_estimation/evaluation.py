@@ -169,7 +169,7 @@ def get_reprojection_errors(session_name, test_dir, cameras=params.default_camer
         # 3) Select calibration
         parts = session_name.split("_")
         if parts[1] == "2025" and parts[2] != "01":
-            calib_file = config.calibration / "calibration_2025_03_12_11_45.toml"
+            calib_file = config.calibration_remote / "calibration_2025_03_12_11_45.toml"
         else:
             calib_file = aniposeTools.get_most_recent_calib(session_name)
         
