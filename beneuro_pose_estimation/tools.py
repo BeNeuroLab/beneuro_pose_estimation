@@ -27,7 +27,7 @@ def _load_calibration_registry() -> dict:
     Loads the calibration registry from TOML file.
     Returns an empty dict if registry doesn't exist yet.
     """
-    registry_path = config.calibration_registry
+    registry_path = config.calibration_local / "calibration_registry.toml"
     if not registry_path.exists():
         logger.info(f"Calibration registry not found at {registry_path}. Starting with empty registry.")
         return {}
@@ -46,7 +46,8 @@ def _save_calibration_registry(registry: dict) -> None:
     Saves the calibration registry to TOML file.
     Creates parent directories if needed.
     """
-    registry_path = config.calibration_registry
+    registry_path = config.calibration_local / "calibration_registry.toml"
+    
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     
     try:
@@ -130,8 +131,8 @@ def _sync_registry_from_remote() -> dict:
     dict
         Calibration registry (from remote or local)
     """
-    remote_registry_path = config.calibration_registry  # Remote path in config
-    local_registry_path = config.REPO_PATH / "beneuro_pose_estimation" / "anipose" / ".calibration_registry.toml"  # Local backup in repo
+    remote_registry_path = config.calibration_remote / "calibration_registry.toml" # Remote path in config
+    local_registry_path = config.calibration_local / "calibration_registry.toml"  # Local backup in repo
     
     # Try to download from remote
     if remote_registry_path.exists() and remote_registry_path != local_registry_path:
@@ -139,7 +140,8 @@ def _sync_registry_from_remote() -> dict:
             _copy_file_from_remote(remote_registry_path, local_registry_path)
         except Exception as e:
             logger.warning(f"Could not sync registry from remote: {e}")
-    
+    else:
+        logger.warning("Remote registry not found. Looking for local registry.")
     # Load from local (whether just synced or already there)
     return _load_calibration_registry()
 
@@ -153,8 +155,8 @@ def _sync_registry_to_remote() -> bool:
     bool
         True if sync succeeded, False otherwise
     """
-    local_registry_path = config.calibration_registry
-    remote_registry_path = config.calibration / "calibration_registry.toml"  # Same location in remote
+    local_registry_path = config.calibration_local / "calibration_registry.toml"
+    remote_registry_path = config.calibration_remote / "calibration_registry.toml"  # Same location in remote
     
     if local_registry_path == remote_registry_path:
         logger.debug("Registry already at remote location")
@@ -185,6 +187,7 @@ def _ensure_calib_file_local(remote_calib_path: Path) -> Path:
     except (AttributeError, TypeError):
         pass
 
+    
     local_calib_path = config.calibration_local / remote_calib_path.name
     
 
@@ -193,6 +196,7 @@ def _ensure_calib_file_local(remote_calib_path: Path) -> Path:
         logger.debug(f"Using cached calibration: {local_calib_path}")
         return local_calib_path
     
+    remote_calib_path = config.calibration_remote / remote_calib_path.name
     # Try to download from remote
     if remote_calib_path.exists():
         success = _copy_file_from_remote(remote_calib_path, local_calib_path)
@@ -234,7 +238,7 @@ def get_calib_for_session(session_name: str) -> Path:
     """
     from beneuro_pose_estimation.anipose.aniposeTools import get_most_recent_calib
     
-    registry = _load_calibration_registry()
+    registry = _sync_registry_from_remote()
     
     # Extract session date from session_name
     try:
@@ -269,7 +273,7 @@ def get_calib_for_session(session_name: str) -> Path:
         calib_file_path = Path(matching_entry["file_path"])
         # If relative path, make it absolute under calibration directory
         if not calib_file_path.is_absolute():
-            calib_file_path = config.calibration / calib_file_path
+            calib_file_path = config.calibration_remote / calib_file_path
         return calib_file_path
     
     # No match in registry, fall back to date-based logic
@@ -309,19 +313,19 @@ def _register_calibration(calib_folder_name: str, start_date: str, calib_file_pa
     # Generate calibration ID from start_date
     calib_id = f"calibration_{start_date.replace('-', '_')}"
     
-    # Ensure we don't overwrite existing entries
-    counter = 1
-    original_id = calib_id
-    while calib_id in registry:
-        calib_id = f"{original_id}_{counter}"
-        counter += 1
+    # # Ensure we don't overwrite existing entries
+    # counter = 1
+    # original_id = calib_id
+    # while calib_id in registry:
+    #     calib_id = f"{original_id}_{counter}"
+    #     counter += 1
     
     # Create registry entry
     registry[calib_id] = {
         "folder_name": calib_folder_name,
         "valid_start": start_date,
         "valid_end": "",  # Empty = no end date (until next calibration)
-        "file_path": str(calib_file_path.relative_to(config.calibration) if calib_file_path.is_relative_to(config.calibration) else calib_file_path),
+        "file_path": str(calib_file_path),
         "created": datetime.now().isoformat(),
     }
     

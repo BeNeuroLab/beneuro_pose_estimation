@@ -92,7 +92,7 @@ def get_calib_file(calib_videos_dir: Path, calib_save_path: Optional[Path] = Non
         logger.info(f"Calibration already exists: {calib_save_path}")
         # Try to copy to remote if not already there
         
-        return logger.info
+        return calib_save_path
     
     # 3. Generate new calibration file
     logger.info(f"Generating new calibration file from videos in {calib_videos_dir}...")
@@ -110,8 +110,10 @@ def get_calib_file(calib_videos_dir: Path, calib_save_path: Optional[Path] = Non
             vidnames.append([str(video_file)])  # Convert to str if required by downstream methods
             cam_names.append(cam_name)
 
+    
+
     # Save to local repo first
-    calib_save_path.mkdir(parents=True, exist_ok=True)
+    calib_save_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Initialize and configure CharucoBoard and CameraGroup
     cgroup = CameraGroup.from_names(cam_names, fisheye=params.fisheye)
@@ -204,7 +206,8 @@ def new_calib(calib_folder_name: str = None, start_date: str = None) -> str:
     except Exception:
         calib_file_name = "calibration.toml"
     
-    remote_calib_path = config.calibration / calib_file_name
+    remote_calib_path = config.calibration_remote / calib_file_name
+    save_path = remote_calib_path
     if remote_calib_path.exists():
         logger.info(
             f"Calibration file already exists on remote: {remote_calib_path}. "
@@ -214,23 +217,18 @@ def new_calib(calib_folder_name: str = None, start_date: str = None) -> str:
         calib_path = get_calib_file(calib_folder,calib_save_path=config.calibration_local / calib_file_name)
 
         if not _copy_file_to_remote(calib_path, remote_calib_path):
+            save_path = calib_path
             logger.warning(
                 f"[bold yellow]Could not copy calibration to remote ({remote_calib_path}). "
                 f"Local copy available at {calib_path}[/bold yellow]"
             )
-
     
-    # # Get or generate calibration file (checks local first, generates if needed)
-    # logger.info(f"Getting calibration file from videos in {calib_folder}...") 
 
-    logger.info(f"Calibration file ready: {calib_path.name}")
-    
     # if not calib_path.exists():
     #     raise FileNotFoundError(f"Calibration file not found: {local_calib_path}")
-    
     # Register in calibration registry (with remote sync)
     logger.info(f"Registering calibration with start_date={start_date}...")
-    calib_id = _register_calibration(calib_folder_name, start_date, calib_path)
+    calib_id = _register_calibration(calib_folder_name, start_date, save_path)
     logger.info(f"Calibration registered successfully: {calib_id}")
     
     return calib_id
@@ -330,7 +328,7 @@ def get_most_recent_calib(session):
     calib_file_name = Path(
         f"calibration_{calib_datetime.strftime('%Y_%m_%d_%H_%M')}.toml"
     )
-    calib_file_path = config.calibration / calib_file_name
+    calib_file_path = config.calibration_remote / calib_file_name
     return recent_calib_folder, calib_file_path
 
 
@@ -953,8 +951,9 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
             )
             raise ValueError(f"No calibration found for session {session}")
         
-        logging.info(f"Using calibration file: {calib_file_path} for session {session}")
-        
+        local_calib_path = _ensure_calib_file_local(calib_file_path)
+        logging.info(f"Using local calibration copy: {local_calib_path} for triangulation")
+           
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = test_dir, output_dir=test_dir, eval=False
         )

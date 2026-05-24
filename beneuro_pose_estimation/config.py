@@ -95,9 +95,9 @@ class Config:
         self.training_config = self.REPO_PATH / "beneuro_pose_estimation" / "sleap" / "training_config.json"
         self.predictions3D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.calibration_videos = self.REMOTE_PATH / "raw" / "pose-estimation" / "calibration-videos"
-        self.calibration = self.REMOTE_PATH / "raw"/ "pose-estimation"/ "calibration_config"
+        self.calibration_remote = self.REMOTE_PATH / "raw"/ "pose-estimation"/ "calibration_config"
         self.calibration_local = self.REPO_PATH / "beneuro_pose_estimation" / "anipose"  
-        self.calibration_registry = self.calibration / "calibration_registry.toml"
+        # self.calibration_registry = self.calibration_local / "calibration_registry.toml"
         self.angles_config = self.REPO_PATH / "beneuro_pose_estimation" / "anipose"
         return
 
