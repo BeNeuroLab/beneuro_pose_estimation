@@ -161,3 +161,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 projects/
+beneuro_pose_estimation/camera_calibration_2025_11_11_17_00.toml
+beneuro_pose_estimation/camera-calibration_2026_03_23_18_00.toml
