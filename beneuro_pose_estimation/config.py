@@ -85,6 +85,7 @@ class Config:
         self.custom_models = self.models_local
 
         self.models = self.models_remote
+        # self.models = self.models_local
         self.skeleton_path = (
             self.REPO_PATH / "beneuro_pose_estimation" / "sleap" / "skeleton.json"
         )
@@ -92,6 +93,7 @@ class Config:
         # self.recordings = self.annotation_party 
         self.predictions2D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.training = self.annotation_party / "training"
+        # self.training = self.LOCAL_PATH / "raw" / "pose-estimation"/ "training"
         self.training_config = self.REPO_PATH / "beneuro_pose_estimation"/ "training_config.json"
         self.predictions3D = self.LOCAL_PATH / "raw" # change to 'processed'?
         self.calibration_videos = self.REMOTE_PATH / "raw" / "calibration_videos"
