@@ -1005,10 +1005,10 @@
     },
     "outputs": {
         "save_outputs": true,
-        "run_name": "test_1",
-        "run_name_prefix": "Camera_Front_Left_",
+        "run_name": "mar2026_",
+        "run_name_prefix": "Camera_Back_Right_",
         "run_name_suffix": "",
-        "runs_folder": "/home/il620/beneuro_pose_estimation/data/raw/pose_estimation/models/Camera_Front_Left",
+        "runs_folder": "/data/bnd-data/raw/pose-estimation/models/Camera_Back_Right",
         "tags": [
             ""
         ],
