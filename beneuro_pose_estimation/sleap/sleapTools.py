@@ -591,7 +591,7 @@ def train_models_old(cameras=params.default_cameras, sessions=None):
 
     logging.info("All training has been executed.")
 
-def train_models(cameras=params.default_cameras, custom_labels = False):
+def train_model(camera, custom_labels = False):
     """
     TBD
     - create config file with training parameters; check if config file exists, if not create it using the parameters in params
@@ -599,39 +599,38 @@ def train_models(cameras=params.default_cameras, custom_labels = False):
     - can be done from GUI
     """
 
-    if isinstance(cameras, str):
-        cameras = [cameras]
+
 
     # Run sleap-train for each session and camera combination
-    for camera in cameras:
-        # Define paths for model and labels
-        # model_dir = os.path.join(params.slp_models_dir, camera)
-        labels_file = config.training / camera / f"{camera}.pkg.slp"
-        config_file = config.training_config
 
+    config_file = config.training_config
+
+        
+                 
+        # Ensure configuration file exists
+    if not config_file.exists():
+        logging.info(f"Configuration file does not exist.")
+        return
+
+
+    # Run sleap-train command
+    logging.info(f"Training model for {camera}...")
+    if custom_labels:
+        command = ["sleap-train", str(config_file)]
+
+    else:
         # Check if the .slp file exists;
+        labels_file = config.training / camera / f"{camera}.pkg.slp"
         if not labels_file.exists():
             logging.info(f"{labels_file} does not exist")
             return 
-                         
-                         
-        # Ensure configuration file exists
-        if not config_file.exists():
-            logging.info(f"Configuration file does not exist.")
-            return
+        command = ["sleap-train", str(config_file), str(labels_file)]
+    result = subprocess.run(command, cwd=str(config_file.parent))
 
-        # Run sleap-train command
-        logging.info(f"Training model for {camera}...")
-        if custom_labels:
-            command = ["sleap-train", str(config_file)]
-        else:
-            command = ["sleap-train", str(config_file), str(labels_file)]
-        result = subprocess.run(command, cwd=str(config_file.parent))
-
-        if result.returncode == 0:
-            logging.info(f"Finished training for {camera}.")
-        else:
-            logging.info(f"Training failed for {camera}.")
+    if result.returncode == 0:
+        logging.info(f"Finished training for {camera}.")
+    else:
+        logging.info(f"Training failed for {camera}.")
 
     logging.info("All training has been executed.")
 
