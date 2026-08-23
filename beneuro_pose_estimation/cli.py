@@ -81,6 +81,11 @@ def track_2d(
     cameras: List[str] = typer.Option(
         None, "--cameras", "-c", help=f"Camera name(s) to track. Provide as a single camera name or a list of camera names. Defaults to {params.default_cameras} if not specified."
     ),
+    test_name: Optional[str] = typer.Option(
+        None,
+        "--test-name", "-t",
+        help="Optional test name to override the default."
+    )
 ):
     """
     Get 2D predictions for a list of sessions and cameras
@@ -90,7 +95,8 @@ def track_2d(
     from beneuro_pose_estimation.sleap.sleapTools import get_2Dpredictions
     get_2Dpredictions(
         sessions=sessions,
-        cameras = cameras
+        cameras = cameras,
+        test_name=test_name,
 
     )
     
