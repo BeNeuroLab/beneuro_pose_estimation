@@ -161,6 +161,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 projects/
-beneuro_pose_estimation/anipose/calibration_2024_12_03_18_00.toml
-beneuro_pose_estimation/anipose/calibration_2026_03_23_18_00.toml
-beneuro_pose_estimation/anipose/calibration_registry.toml
+
+
+beneuro_pose_estimation/anipose/calibration_*.toml
