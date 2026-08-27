@@ -808,7 +808,7 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         # Cut-offs 
         AFTER_3_FEB_2025 = datetime(2025, 2, 3, 0, 0)   
         AFTER_11_NOV_2025 = datetime(2025, 11, 11, 0, 0)   
-
+    
         if dt >= AFTER_11_NOV_2025:
             calib_file_path = config.calibration / "calibration_2025_11_11_17_00.toml"
         elif dt >= AFTER_3_FEB_2025:
@@ -828,7 +828,10 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         #     logging.info(f"Created new calibration file: {calib_file_path}")
         # else:
         #     logging.info(f"Calibration file already exists: {calib_file_path}")
-        
+
+        # calib_file_path = config.calibration / "calibration_2026_08_24_09_45.toml"
+        # calib_file_path = config.calibration / "calibration_2026_05_21_18_50.toml"
+        calib_file_path = config.calibration / "calibration_2026_03_23_18_00.toml"
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = test_dir, output_dir=test_dir, eval=False
         )

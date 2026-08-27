@@ -167,12 +167,13 @@ def get_reprojection_errors(session_name, test_dir, cameras=params.default_camer
         n_frames = points3d.shape[0]
         
         # 3) Select calibration
-        parts = session_name.split("_")
-        if parts[1] == "2025" and parts[2] != "01":
-            calib_file = config.calibration / "calibration_2025_03_12_11_45.toml"
-        else:
-            calib_file = aniposeTools.get_most_recent_calib(session_name)
-        
+        # parts = session_name.split("_")
+        # if parts[1] == "2025" and parts[2] != "01":
+        #     calib_file = config.calibration / "calibration_2025_03_12_11_45.toml"
+        # else:
+        #     calib_file = aniposeTools.get_most_recent_calib(session_name)
+        # calib_file = config.calibration / "calibration_2026_03_23_18_00.toml"
+        calib_file = config.calibration / "calibration_2026_08_24_09_45.toml"
         # 4) Ensure reprojections exist
         if not reproj_file.exists():
             slap.reproject(
