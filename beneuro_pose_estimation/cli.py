@@ -65,13 +65,21 @@ def pose(
         "--model-name", "-m",
         help="Optional custom model name to override the default."
     ),
+    pose2d: bool = typer.Option(
+        False,
+        "-2d",
+        help="Only run 2D pose estimation, skipping calibration and triangulation to 3D."
+    ),
 
 ):
     from beneuro_pose_estimation.anipose.aniposeTools import run_pose_estimation
 
-    run_pose_estimation(sessions, custom_model_name)
+    run_pose_estimation(sessions, custom_model_name, pose2d=pose2d)
 
     return
+
+
+
 
 @app.command()
 def track_2d(
@@ -215,11 +223,6 @@ def pose_test(
         "--test-name", "-n",
         help="An optional name for this pose test run."
     ),
-    cameras: List[str] = typer.Option(
-        None, 
-        "--cameras", "-c",
-        help="Cameras to process. If not provided, uses default cameras from params."
-    ),
     force_new: bool = typer.Option(
         False,
         "--force-new", "-f",
@@ -234,7 +237,13 @@ def pose_test(
         5,
         "--duration", "-d",
         help="Duration in seconds."
-    )
+    ),
+
+    pose2d: bool = typer.Option(
+        False,
+        "-2d",
+        help="Only run 2D pose estimation, skipping calibration and triangulation to 3D."
+    ),
 ):
     """
     Run pose estimation pipeline on short test videos.
@@ -244,16 +253,19 @@ def pose_test(
     if they already exist.
     """
     from beneuro_pose_estimation.anipose.aniposeTools import run_pose_test
-    from beneuro_pose_estimation.evaluation import create_interactive_3d_animation
 
+    
     test_dir = run_pose_test(
         session=session,
         test_name=test_name,
-        cameras=cameras or params.default_cameras,
         force_new_videos=force_new,
         start_frame=start_frame,
         duration_seconds=duration,
+        pose2d=pose2d
     )
+    if pose2d:
+        return
+    from beneuro_pose_estimation.evaluation import create_interactive_3d_animation
     csv_path = test_dir/f"{session}_3dpts_angles.csv"
     html_path = test_dir / f"{session}_3d_animation.html"
     
@@ -264,7 +276,7 @@ def pose_test(
         frame_start  = None,
         frame_end    = None,
     )
-   
+
     return
 
 @app.command()

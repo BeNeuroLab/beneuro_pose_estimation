@@ -21,6 +21,7 @@ default_cameras = [
     "Camera_Back_Right",
 ]
 
+cameras_2d = ['Camera_Top_Left', 'Camera_Side_Right']
 
 camera_name_mapping = {
     "Camera_Top_Left": "Camera_0",

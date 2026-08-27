@@ -817,7 +817,7 @@ def session_datetime(session: str) -> datetime:
 def run_pose_estimation(
     sessions,
     custom_model_name = None,
-    eval=False, d2 = False
+    eval=False, pose2d = False
 ):
     """
     Main routing from videos to 3D keypoints and angles.
@@ -825,6 +825,10 @@ def run_pose_estimation(
 
     if isinstance(sessions, str):
         sessions = [sessions]
+    if pose2d:
+        cameras = params.cameras_2d
+    else:
+        cameras = params.default_cameras
     
 
     for session in sessions:
@@ -836,10 +840,10 @@ def run_pose_estimation(
         
 
         # get 2D predictions - slp files saved in predictions2D/animal/session/predictions
-        sleapTools.get_2Dpredictions(session, custom_model_name = custom_model_name)
+        sleapTools.get_2Dpredictions(session, custom_model_name = custom_model_name,cameras=cameras)
 
         # convert 2D predictions to h5 files - h5 files saved in predictions2D/animal/session/predictions
-        convert_2Dpred_to_h5(session,input_dir=predictions_dir, output_dir=predictions_dir) 
+        convert_2Dpred_to_h5(session,cameras = cameras,input_dir=predictions_dir, output_dir=predictions_dir) 
         metadata_path = config.recordings/animal/session/ f"{session}_cameras"/ "metadata.csv"
 
         try: 
@@ -853,87 +857,92 @@ def run_pose_estimation(
 
         ###############################################
 
-        if d2:
-            # make csv with the 2d predictions from the selected cameras and keypoints
-            continue
-        else:
-            # Get calibration file for this session using the registry
-            calib_file_path = get_calib_for_session(session)
-            
-            if calib_file_path is None:
-                logging.error(
-                    f"Could not find calibration file for session {session}. "
-                    f"Please register a calibration using: bnp new-calib"
-                )
-                raise ValueError(f"No calibration found for session {session}")
-            
-            logging.info(f"Found calibration file: {calib_file_path}")
-            
-            # Ensure calibration file is available locally (download if needed)
-            local_calib_path = _ensure_calib_file_local(calib_file_path)
-            logging.info(f"Using local calibration copy: {local_calib_path} for triangulation")
-                
-            compute_3Dpredictions(
-                session, calib_file_path=local_calib_path, pred_dir=predictions_dir, output_dir=predictions_dir, eval=eval
+        if pose2d:
+            logging.info(f"2D pose estimation completed for {session}, cameras: {cameras}.")
+            return
+ 
+        # Get calibration file for this session using the registry
+        calib_file_path = get_calib_for_session(session)
+        
+        if calib_file_path is None:
+            logging.error(
+                f"Could not find calibration file for session {session}. "
+                f"Please register a calibration using: bnp new-calib"
             )
-            labels_fname = predictions_dir/f"{session}_3dpts.csv"
-            save_to_csv(
-                session,
-                predictions_dir/f"{session}_pose_estimation_combined.h5",
-                labels_fname,
-            )
-            config_path = config.angles_config/"config.toml"
-            if not config_path.exists():
-                config_path = create_config_file(config_path)
-            config_angles = toml.load(config_path)
-            angles_csv = predictions_dir/f"{session}_angles.csv"
-            # labels_data = pd.read_csv(labels_xfname)
-            # logging.debug(labels_data.columns)
-            compute_angles(config_angles, labels_fname, angles_csv)
+            raise ValueError(f"No calibration found for session {session}")
+        
+        logging.info(f"Found calibration file: {calib_file_path}")
+        
+        # Ensure calibration file is available locally (download if needed)
+        local_calib_path = _ensure_calib_file_local(calib_file_path)
+        logging.info(f"Using local calibration copy: {local_calib_path} for triangulation")
             
-            pose_data = pd.read_csv(labels_fname)
-            angles_data = pd.read_csv(angles_csv)
+        compute_3Dpredictions(
+            session, calib_file_path=local_calib_path, pred_dir=predictions_dir, output_dir=predictions_dir, eval=eval
+        )
+        labels_fname = predictions_dir/f"{session}_3dpts.csv"
+        save_to_csv(
+            session,
+            predictions_dir/f"{session}_pose_estimation_combined.h5",
+            labels_fname,
+        )
+        config_path = config.angles_config/"config.toml"
+        if not config_path.exists():
+            config_path = create_config_file(config_path)
+        config_angles = toml.load(config_path)
+        angles_csv = predictions_dir/f"{session}_angles.csv"
+        # labels_data = pd.read_csv(labels_xfname)
+        # logging.debug(labels_data.columns)
+        compute_angles(config_angles, labels_fname, angles_csv)
+        
+        pose_data = pd.read_csv(labels_fname)
+        angles_data = pd.read_csv(angles_csv)
 
-            # Combine pose data and angles data
-            combined_data = pd.concat([pose_data, angles_data], axis=1)
-            combined_csv = predictions_dir/f"{session}_3dpts_angles.csv"
-            # Save the updated CSV
-            combined_data.to_csv(combined_csv, index=False)
-            logging.info(f"Angles computed and combined CSV saved at {combined_csv}.")
-            try:
-                if labels_fname.exists():
-                    labels_fname.unlink()
-                    logger.info(f"Deleted intermediate CSV: {labels_fname.name}")
-                if angles_csv.exists():
-                    angles_csv.unlink()
-                    logger.info(f"Deleted intermediate CSV: {angles_csv.name}")
-            except Exception as e:
-                logger.error(f"Error deleting intermediate CSVs: {e}")
-            
+        # Combine pose data and angles data
+        combined_data = pd.concat([pose_data, angles_data], axis=1)
+        combined_csv = predictions_dir/f"{session}_3dpts_angles.csv"
+        # Save the updated CSV
+        combined_data.to_csv(combined_csv, index=False)
+        logging.info(f"Angles computed and combined CSV saved at {combined_csv}.")
+        try:
+            if labels_fname.exists():
+                labels_fname.unlink()
+                logger.info(f"Deleted intermediate CSV: {labels_fname.name}")
+            if angles_csv.exists():
+                angles_csv.unlink()
+                logger.info(f"Deleted intermediate CSV: {angles_csv.name}")
+        except Exception as e:
+            logger.error(f"Error deleting intermediate CSVs: {e}")
+        
 
-            triangulation_files = list(predictions_dir.glob("**/*triangulation*.h5"))
-            if triangulation_files:
-                for tri_file in triangulation_files:
-                    try:
-                        tri_file.unlink()
-                        logger.info(f"Deleted: {tri_file}")
-                    except Exception as e:
-                        logger.error(f"Error deleting {tri_file}: {e}")
-            logging.info(f"Pose estimation completed for {session}.")
-
-
-
+        triangulation_files = list(predictions_dir.glob("**/*triangulation*.h5"))
+        if triangulation_files:
+            for tri_file in triangulation_files:
+                try:
+                    tri_file.unlink()
+                    logger.info(f"Deleted: {tri_file}")
+                except Exception as e:
+                    logger.error(f"Error deleting {tri_file}: {e}")
+        logging.info(f"Pose estimation completed for {session}.")
+        return
 
 
 
-def run_pose_test(session, test_name = None, cameras=params.default_cameras, force_new_videos=False, 
-                 start_frame=None, duration_seconds=10):
+
+
+
+def run_pose_test(session, test_name = None, force_new_videos=False, 
+                 start_frame=None, duration_seconds=10, pose2d=False):
     """
     Runs a test of the pose estimation pipeline on short videos.
     """
     try:
         # 1. Create test videos
         logger.info("Creating test videos...")
+        if pose2d:
+            cameras = params.cameras_2d
+        else:
+            cameras = params.default_cameras
         tests_dir = tools.create_test_videos(session, cameras, duration_seconds, 
                                     force_new=force_new_videos, start_frame=start_frame)
         
@@ -947,8 +956,12 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         # 3. Convert predictions to h5 format
         logger.info("Converting predictions to h5 format...")
         convert_2Dpred_to_h5(session, cameras, input_dir=test_dir, output_dir=test_dir)
+
+        if pose2d:
+            logging.info(f"2D pose test completed for {session}, cameras: {cameras}.")
+            return test_dir
         
-        # Get calibration file for this session using the registry
+    # Get calibration file for this session using the registry
         calib_file_path = get_calib_for_session(session)
         
         if calib_file_path is None:
@@ -960,7 +973,7 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         
         local_calib_path = _ensure_calib_file_local(calib_file_path)
         logging.info(f"Using local calibration copy: {local_calib_path} for triangulation")
-           
+        
         compute_3Dpredictions(
             session, calib_file_path=calib_file_path, pred_dir = test_dir, output_dir=test_dir, eval=False
         )
@@ -975,7 +988,7 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
             config_path = create_config_file(config_path)
         config_angles = toml.load(config_path)
         angles_csv = test_dir/f"{session}_angles.csv"
-      
+    
 
         compute_angles(config_angles, labels_fname, angles_csv)
         
@@ -1009,8 +1022,8 @@ def run_pose_test(session, test_name = None, cameras=params.default_cameras, for
         logging.info(f"Pose estimation completed for {session}.")
         return test_dir
 
-        
-        
+    
+    
 
     except Exception as e:
         logger.error(f"Error in pose test for {session}: {e}")
