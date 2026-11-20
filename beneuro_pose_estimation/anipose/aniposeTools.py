@@ -702,13 +702,13 @@ def pad_and_interp_analysis_h5_dynamic(
     half    = bin_size // 2
 
 
-    # invert mapping "friendly"->"Camera_N"
-    inv_map = {v: k for k, v in params.camera_name_mapping.items()}
+    # invert mapping "view"->serial"
+    inv_map = {v: k for k, v in params.camera_serial_mapping.items()}
 
     # 1) compute expected slot count per camera
     cam_slots = {}
-    for cam_code in df["frame_camera_name"].unique():
-        sub = df[df["frame_camera_name"] == cam_code]
+    for cam_code in df["frame_camera_serial"].unique():
+        sub = df[df["frame_camera_serial"] == cam_code]
         if sub.empty:
             continue
         start, end = sub["frame_timestamp"].min(), sub["frame_timestamp"].max()
@@ -839,9 +839,9 @@ def run_pose_estimation(
         sleapTools.get_2Dpredictions(session, custom_model_name = custom_model_name)
 
         # convert 2D predictions to h5 files - h5 files saved in predictions2D/animal/session/predictions
+    
         convert_2Dpred_to_h5(session,input_dir=predictions_dir, output_dir=predictions_dir) 
         metadata_path = config.recordings/animal/session/ f"{session}_cameras"/ "metadata.csv"
-
         try: 
             pad_and_interp_analysis_h5_dynamic(
             csv_path    = metadata_path,

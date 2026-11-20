@@ -32,6 +32,19 @@ camera_name_mapping = {
     "Camera_Back_Right": "Camera_6",
 }
 
+# Physical camera serial -> canonical video name. The acquisition software assigns
+# "Camera_N" names inconsistently between sessions, but the serial is always correct.
+camera_serial_mapping = {
+    "Camera_Top_Left": 22411716,
+    "Camera_Side_Left": 22411693,
+    "Camera_Front_Right": 22411715,
+    "Camera_Face": 21199216,
+    "Camera_Front_Left": 22524796,
+    "Camera_Side_Right": 22505113,
+    "Camera_Back_Right": 22411714,
+
+}
+
 #### SLEAP config
 
 ## SLEAP annotation parameters
