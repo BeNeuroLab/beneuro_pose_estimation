@@ -727,7 +727,7 @@ def pad_and_interp_analysis_h5_dynamic(
             continue
 
         cam_out = out_root / folder
-        interp_npy = cam_out / f"{cam_code}_interp_idxs.npy"
+        interp_npy = cam_out / f"{folder}_interp_idxs.npy"
 
         if interp_npy.exists():
             print(f"[{cam_code}] found {interp_npy.name} → skipping (already interpolated)")
@@ -735,7 +735,7 @@ def pad_and_interp_analysis_h5_dynamic(
 
         # isolate & sort
         sub = (
-            df[df["frame_camera_name"] == cam_code]
+            df[df["frame_camera_serial"] == cam_code]
             .loc[:, ["frame_timestamp","frame_id"]]
             .sort_values("frame_timestamp")
             .reset_index(drop=True)
@@ -802,6 +802,36 @@ def pad_and_interp_analysis_h5_dynamic(
         np.save(interp_npy, interp_idxs)
 
         print(f"[{cam_code}] → {out_h5}  (interpolated {len(interp_idxs)} slots)")
+def reset_old_frame_alignment(predictions_dir: Path) -> bool:
+    """
+    Sessions aligned before switching to camera serials have interpolation files named
+    after the metadata camera name (e.g. Camera_4_interp_idxs.npy), which may have used
+    the wrong camera's timestamps. Their .analysis.h5 files were padded in place, so they
+    cannot be re-aligned. Deletes the .analysis.h5 and interpolation files of every camera
+    (alignment depends on all cameras), plus any leftover triangulation windows, so they
+    are rebuilt from the .slp predictions.
+
+    Returns True if the session was reset.
+    """
+    old_files = list(predictions_dir.glob("*/Camera_[0-9]_interp_idxs.npy"))
+    if not old_files:
+        return False
+
+    logging.info(
+        f"Found old-style interpolation files in {predictions_dir} "
+        f"({', '.join(f.name for f in old_files)}). Re-converting from .slp."
+    )
+    stale = (
+        list(predictions_dir.glob("*/*.analysis.h5"))
+        + list(predictions_dir.glob("*/*_interp_idxs.npy"))
+        + list(predictions_dir.glob("*triangulation_*.h5"))
+    )
+    for f in stale:
+        f.unlink()
+        logging.info(f"Deleted {f}")
+    return True
+
+
 def session_datetime(session: str) -> datetime:
     """
     Expected format: M0XX_year_month_day_hour_minute
@@ -838,8 +868,10 @@ def run_pose_estimation(
         # get 2D predictions - slp files saved in predictions2D/animal/session/predictions
         sleapTools.get_2Dpredictions(session, custom_model_name = custom_model_name)
 
+        # sessions aligned with the old name-based metadata lookup are rebuilt from .slp
+        reset_old_frame_alignment(predictions_dir)
+
         # convert 2D predictions to h5 files - h5 files saved in predictions2D/animal/session/predictions
-    
         convert_2Dpred_to_h5(session,input_dir=predictions_dir, output_dir=predictions_dir) 
         metadata_path = config.recordings/animal/session/ f"{session}_cameras"/ "metadata.csv"
         try: 
